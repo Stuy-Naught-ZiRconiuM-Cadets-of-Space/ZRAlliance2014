@@ -1,0 +1,2 @@
+1. Function that checks whether you are facing the asteroid or not
+2.
