@@ -1,0 +1,231 @@
+float look1[3], look2[3], look3[3], look[3]; //obbiettivo al quale puntare
+float goal1[3], goal2[3], goal3[3], goal[3], goalt[3], mem[3]; //posizione obbiettivo, posizione obiettivo traslato, primo punto fotografato
+float poi0[3], poi1[3], poi2[3], poipos[3]; //posizione dei punti e del punto che sta andando a scattare
+float mystate[12], mypos[3], myr, r;           //stato, posizione e distanza tra la posizione e l'origine dello sphere,r=raggio del punto temp
+float otherstate[12], otherpos[3], otherr;  //stato, posizione e distanza tra la posizione e l'origine dell'o sphere'opponente
+float betweendist, goaldist;  //distanza tra lo sphere 1 e 2, distanza per arrivare al punto indicato in goal
+float go[3], temp[3];        //posizione nella quale deve dirigersi,punto per controllo
+int id1, id2, id3, id;  //id del POI obbiettivo 
+int flare;          //tempo mancante al prossimo "flare"
+int pic, controlpic, beforepic;//pic = numero foto valide , controlpic = controlladove sono state scattate le foto
+int countpic;       //beforepic = indica il numero di foto precedenti , countpic = conta le foto scattate
+int Time, count;    //tempo trascorso, contatore
+int mission;        //indica a quale punto scattare la foto
+bool spphase, xphase, impact; //spphase =indica se viene interrotto da un cambio di poi, xphase = scatta foto per piÃ?Â¹ punti
+bool stop, change; //da il via libera per proseguire la missione, avverte il cambio imminente dei poi
+float origin[3];        //coordinarte del'origine delgi assi
+float score, beforescore;   //punteggio attuale, punteggio precedente
+float fuel; //CO2 restante
+float dist2, dist; //trasla goalt di dist2, distanza della quale shiftare il punto da obiettivo
+float distot, dif[3]; //distanza tra mypos e goal, differenza tra i vettori mypos e goalt
+
+void init(){
+    mission = 1, count = 0;
+    xphase = false, impact = false, stop = false;
+    countpic = 0, controlpic = 0, beforepic = 0, pic = 0;
+    id1 = 0, id2 = 0, id3 = 0;
+    for (int s = 0; s < 3; s++){
+        look1[s] = 0;
+        look2[s] = 0;
+        look3[s] = 0;
+        goal1[s] = 0;
+        goal2[s] = 0;
+        goal3[s] = 0;
+        origin[s] = 0;
+    }
+}
+
+void loop(){
+    states();       //prende tutti gli stati, le posizioni e le distanze
+    //goals();        //prende la posizione dei poi e li ordina per vicinanza
+    //shift(puntoDaTraslare, puntDalQualeTraslare, distanzaDalPuntoDaTraslare, arrayDiOutput) / shift(float[3],float[3],float,float[3])
+
+
+    if (flare < 18 && controlpic == 0)
+        xphase = true;
+    if ((Time > 40 && Time < 60) || (Time > 100 && Time < 120) || (Time > 160 && Time < 180) || (Time > 224))
+        change = true; // bisogia calcolare il tempo che impiegherebbe per raggiungere il poi
+    else
+        change = false;
+
+    if (Time % 60 == 0){
+        if (controlpic == 1 && pic == 1)
+            spphase = true;
+        else
+            spphase = false;
+        if (controlpic == 2)
+            mission = 0;
+        else
+            mission = 1;
+        goals();
+    }
+
+    if (mission == 1){
+        for (int aa = 0; aa < 3; aa++){
+            goal[aa] = goal1[aa];
+            look[aa] = look1[aa];
+            poipos[aa] = poi0[aa];
+        }
+        id = id1;
+    }
+    else if (mission == 2){
+        for (int ab = 0; ab < 3; ab++){
+            goal[ab] = goal2[ab];
+            look[ab] = look2[ab];
+            poipos[ab] = poi1[ab];
+        }
+        id = id2;
+        if (mem[0] == goal[0] && mem[1] == goal[1] && mem[2] == goal[2])
+            mission = 3;
+    }
+    else if (mission == 3){
+        for (int ac = 0; ac < 3; ac++){
+            goal[ac] = goal3[ac];
+            look[ac] = look3[ac];
+            poipos[ac] = poi2[ac];
+        }
+        id = id3;
+    }
+    
+    if (controlpic == 0 && not stop){         //ripete fin quando non scatta una foto valida  nella inner zone
+        api.setPositionTarget(goal);
+        api.setAttitudeTarget(look);
+        if (game.alignLine(id) && not xphase && myr < 0.42f) //plus aggiunto ultimo and
+            game.takePic(id);
+    }
+    else if (controlpic == 1){                          //ripete fin quando non scatta una foto valida nella outer zone
+        shift(goal, origin, 0.51f, go);
+        api.setPositionTarget(go);
+        api.setAttitudeTarget(look);
+        if (game.alignLine(id) && myr > 0.43f)
+            game.takePic(id);
+    }
+    else if (controlpic == 2){
+        shift(mypos, origin, 0.60f, go);                //ripete fin quando non invia le 2 foto scattate
+        api.setPositionTarget(go);
+        if (myr > 0.53f || pic == 0){
+            game.uploadPic();
+            if (not change){
+                xphase = false;
+                controlpic = 0;
+                if (mission == 1){
+                    for (int yy = 0; yy < 3; yy++)
+                        mem[yy] = goal[yy];
+                }
+            goals();
+            mission = 2;
+            }
+            else
+                xphase = true;
+        }
+    }
+    
+    if (xphase && flare > 20){             //scatta foto in piu' per guadagnare punti
+        game.takePic(id3);
+    }
+    else if (xphase && flare < 18 && flare > 1)
+        game.takePic(id3);
+    else
+        xphase = false;
+    /*if(Time%10==0)
+    {
+        for (int xx = 0; xx < 3 ; xx++)            //evita lo scontro con asteroide al cambio poi
+        	goalt[xx] = goal[xx];
+        dist2 = 0;
+        do
+        {
+            dist = 0, impact = false;
+        	//states();
+        	mathVecSubtract(dif,mypos,goalt,3);
+    	    distot = mathVecMagnitude(dif,3);
+    	    while (dist <= distot || !impact){
+    	    	dist += 0.05;
+    	    	shift(goalt,mypos,dist,temp);
+    	    	r = mathVecMagnitude(temp,3);
+    	    	if (r < 0.33f){
+    	    		impact = true;
+    	    		stop = true;
+    	    	}
+    	    }
+    	    if (impact){
+    	    	dist2 += 0.05;
+    	    	goalt[0] -= 0.05;
+    	    }
+        }while (impact);
+        
+        while (dist2 != 0){
+    	    api.setPositionTarget(goalt);
+    	    dist = 0, impact = false;
+    	    states();
+    	    mathVecSubtract(dif,mypos,goalt,3);
+    	    distot = mathVecMagnitude(dif,3);
+    	    while (dist <= distot && not impact){
+    		    dist += 0.05;
+    		    shift(goalt,mypos,dist,temp);
+    		    r = mathVecMagnitude(temp,3);
+    		    if (r < 0.33f)
+    			    impact = true;
+    	    }
+    	    if (not impact){
+    		    dist2 -= 0.05;
+    		    goalt[0] += 0.05;
+    	    }
+        }
+    }
+    stop = false;*/                      //------------------------------------------------------------------------------
+
+    if (myr < 0.33f){                    //evita lo scontro con l'asteroide
+        shift(mypos, origin, 0.8, go);  //plus sostituito 1 con 0.8
+        api.setPositionTarget(go);
+    }
+
+    if (myr > 0.59f){                   //evita di uscire fuori l'area di gioco
+        shift(mypos, origin, 0.3, go);  //plus sostituito 0.0 con 0.3
+        api.setPositionTarget(go);
+    }
+   
+    if (betweendist < 0.36f){    //evita lo scontro tra i due satelliti
+        /*if  (otherstate[3] < 0.002f && otherstate[4] < 0.002 && otherstate[5] < 0.002)
+            if (count == 0){
+                if (mission < 3) mission++;
+                else mission = 1;
+                count = 20;
+            }
+        else if (count =! 0) count--;*/
+        if (otherstate[3] > 0.002f && otherstate[4] > 0.002 && otherstate[5] > 0.002)
+            api.setPositionTarget(mypos);
+    }
+    else count = 0;
+  
+    if (fuel < 2)
+        game.turnOff();
+
+    if (flare == 2){        //spenge lo sphere quando inizia il flare poi lo riaccende
+        if(spphase)         //resetta i parametri per ricominciare da capo la missione
+            controlpic = 0;
+        countpic = 0;
+        game.turnOff();
+        game.turnOn();
+    }
+
+    if (score > beforescore && not xphase && controlpic < 2)    //conta foto errate scattate
+        countpic++;
+    beforescore = score;
+    
+    pic = game.getMemoryFilled(); //mette in pic il numero di foto valide
+    if (beforepic < pic){          //controlla se viene scattata una foto valida
+        controlpic++;
+        countpic = 0;
+        spphase = false;
+    }
+    beforepic = pic;
+    
+    if (countpic == 3){ //in caso non riece a scattare la foto passa alla fase succesiva
+        countpic = 0;
+        controlpic++;
+    }
+    
+    DEBUG(("pic=%d, cpic=%d, countpic=%d , spp=%d, xp=%d, miss=%d, \n", myr, pic, controlpic, countpic, spphase, xphase, mission));
+    DEBUG(("\n goaldist=%f, id=%d \n", goaldist, id));
+
+}
