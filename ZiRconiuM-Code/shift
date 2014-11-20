@@ -1,0 +1,9 @@
+void shift(float pos1[3], float pos2[3], float r, float out[3]){          //trasla il punto della nostra posizione
+    float dpos, betwen[3];
+    
+    mathVecSubtract(betwen, pos1, pos2, 3);
+    dpos = mathVecMagnitude(betwen,3);     //prende la distanza tra i 2 punti
+    
+    for (int j = 0; j < 3; j++)         //calcola il punto traslato di 'r'
+        out[j] = pos1[j] * r / dpos;
+}
