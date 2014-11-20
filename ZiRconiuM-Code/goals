@@ -1,0 +1,89 @@
+void goals (){
+    float innerpoi0[3], innerpoi1[3], innerpoi2[3];
+    float between0[3], between1[3], between2[3];
+    float dist0, dist1, dist2, min, med, max;
+
+    //if (Time % 60 == 0){
+        game.getPOILoc(poi0,0); //prende la posizione dei 3 POI
+        game.getPOILoc(poi1,1);
+        game.getPOILoc(poi2,2);
+    
+        for (int q = 0; q < 3; q++){            //trasla le posizioni dei POI nella inner zone
+            shift(poi0, origin, 0.4, innerpoi0);
+            shift(poi1, origin, 0.4, innerpoi1);
+            shift(poi2, origin, 0.4, innerpoi2);
+        }
+    //}
+
+    mathVecSubtract(between0,mypos,innerpoi0,3);    //prende la distanza tra lo sphere e i POI
+    mathVecSubtract(between1,mypos,innerpoi1,3);
+    mathVecSubtract(between2,mypos,innerpoi2,3);
+    dist0 = mathVecMagnitude(between0,3);
+    dist1 = mathVecMagnitude(between1,3);
+    dist2 = mathVecMagnitude(between2,3);
+
+    
+    min = dist0;                    //assegna a 'goal1' le coordinate del POI pÃ?Â¬Ã?Â¹ vicino
+    for (int w = 0; w < 3; w++)     //le coordinate si trovano nella inner zone
+        goal1[w] = innerpoi0[w];    //assegna a 'id' l'ID del POI piÃ?Â¹ vicino
+    shift(poi0, origin, -0.001, look1);
+    id1 = 0;
+    if (min > dist1){                       
+        min = dist1;                
+        for (int e = 0; e < 3; e++)
+            goal1[e] = innerpoi1[e];
+        shift(poi1, origin, -0.001, look1);
+        id1 = 1;                         
+    }                                   
+    if (min > dist2){
+        min = dist2;
+        for (int r = 0; r < 3; r++)
+            goal1[r] = innerpoi2[r];
+        shift(poi2, origin, -0.001, look1);
+        id1 = 2;
+    }
+    
+    max = dist0;                    //assegna a 'goal3' le coordinate del POI pÃ?Â¬Ã?Â¹ lontano
+    for (int t = 0; t < 3; t++)     //le coordinate si trovano nella inner zone
+        goal3[t] = innerpoi0[t];    //assegna a 'id' l'ID del POI piÃ?Â¹ lontano
+    shift(poi0, origin, -0.001, look3);
+    id3 = 0;
+    if (max < dist1){
+        max = dist1;
+        for (int y = 0; y < 3; y++)
+            goal3[y] = innerpoi1[y];
+        shift(poi1, origin, -0.001, look3);
+        id3 = 1;
+    }
+    if (max < dist2){
+        max = dist2;
+        for (int u = 0; u < 3; u++)
+            goal3[u] = innerpoi2[u];
+        shift(poi2, origin, -0.001, look3);
+        id3 = 2;
+    }
+
+    med = dist0;                        //assegna a 'goal2' le coordinate del secondo POI piÃ?Â¹ vicino
+    for (int i = 0; i < 3; i++)         //le coordinate si trovano nella inner zone
+        goal2[i] = innerpoi0[i];        //assegna a 'id' l'ID del secondo POI piÃ?Â¹ vicino
+    shift(poi0, origin, -0.001, look2);
+    id2 = 0;
+    if (dist1 != min && dist1 != max){
+        med = dist1;
+        for (int o = 0; o < 3; o++)
+            goal2[o] = innerpoi1[o];
+        shift(poi1, origin, -0.001, look2);
+        id2 = 1;
+    }
+    if (dist2 != min && dist2 != max){
+        med = dist2;
+        for (int p = 0; p < 3; p++)
+            goal2[p] = innerpoi2[p];
+        shift(poi2, origin, -0.001, look2);
+        id2 = 2;
+    }
+
+    mathVecNormalize(look1,3);  //prepara le coordinate dei punti da guardare per essere usate in api.setAttitudeTarget()
+    mathVecNormalize(look2,3);
+    mathVecNormalize(look3,3);
+}
