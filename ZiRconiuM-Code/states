@@ -1,0 +1,37 @@
+void states(){
+    float between[3];
+  
+    score = game.getScore();            //prende il punteggio
+    
+    fuel = game.getFuelRemaining();      //prende la co2 restante
+    
+    Time = api.getTime();               //calcola tempo trascorso
+    
+    flare = game.getNextFlare();        //calcola il tempo mancante al prossimo flare
+    if (flare == -1)
+        flare = 31;
+        
+    api.getMyZRState(mystate);          //prende lo stato dello sphere
+    api.getOtherZRState(otherstate);    //prende lo stato dell'opponente
+    
+    for(int z = 0; z < 3; z++){         //prende la posizione dello sphere e dell'opponente
+        mypos[z] = mystate[z];
+        otherpos[z] = otherstate[z];
+    }
+    
+    myr = mathVecMagnitude(mypos, 3);
+    otherr = mathVecMagnitude(otherpos, 3);
+    
+    mathVecSubtract(between, mypos, otherpos, 3);
+    betweendist = mathVecMagnitude(between, 3);
+    
+    if (controlpic == 0){
+        mathVecSubtract(between, mypos, goal, 3);
+        goaldist = mathVecMagnitude(between, 3);
+    }
+    else if (controlpic == 1){
+        shift(mypos, origin, 0.51f, between);
+        mathVecSubtract(between, between, go, 3);
+        goaldist = mathVecMagnitude(between, 3);
+    }
+}
