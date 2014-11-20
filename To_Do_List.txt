@@ -1,2 +1,4 @@
-1. Function that checks whether you are facing the asteroid or not
-2.
+1. Function that checks whether you are facing the Earth or not
+2. Function that "rotates" the POI location
+3. "setPositionTarget" function - should work just like the api functions, except finds the most efficient path to a target.
+4. Function that finds the closest point in the shadow zone to get to
