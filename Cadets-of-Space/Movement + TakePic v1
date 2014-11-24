@@ -1,0 +1,177 @@
+//Begin page functions
+void mathVecScale(float res[3], float src[3], float mag, bool norm)
+{
+    memcpy(res,src,sizeof(float)*3);
+    if(norm) mathVecNormalize(res,3);
+    res[0]*=mag;
+    res[1]*=mag;
+    res[2]*=mag;
+} 
+
+float DistFromObj(float *target,float *who)
+{   
+    float dif[3];
+    mathVecSubtract (dif,target,who,3);
+    return mathVecMagnitude(dif,3);
+}
+
+float angles(float x1, float y1, float z1, float x2, float y2, float z2)
+{ 
+    float uv=x1*x2+y1*y2+z1*z2;
+    float u_v= sqrtf(powf(x1,2)+powf(y1,2)+powf(z1,2))*sqrtf(powf(x2,2)+powf(y2,2)+powf(z2,2));
+    float anglez=(uv/u_v);
+    return acosf(anglez);
+}
+
+void AvoidSolarFlares()
+{
+    clock=game.getNextFlare();
+    
+    if(clock==1) 
+    {
+        game.turnOff();
+        timeuntilturnon=0;
+    }
+    
+    timeuntilturnon++;
+    if(timeuntilturnon==3) game.turnOn();
+    
+    DEBUG(("SF: %d ",clock));
+}
+//End page functions
+//Begin page init
+ZRState MyState, otherState;
+float POI[3];
+float d0,d1,d2;
+float poi0[3];
+float poi1[3];
+float poi2[3];
+float center[3];
+float targetRadius;
+float targetPos[3];
+float phi;
+float theta;
+int time;
+float R;   
+int id;
+int check[3]; 
+float RTanTheta;
+int stage;
+int clock;
+int timeuntilturnon;
+float stop[3];
+
+void init()
+{
+    time=0;
+    timeuntilturnon=4;
+    center[0]=center[1]=center[2]=0.0f;
+    stage=2;
+}
+//End page init
+//Begin page main
+void loop()
+{ 
+    float Blue[]={0,0,0}; //Axis
+    float Pink[3];        // Helper 
+    float DarkGreen[3];   // Ideal Position
+    float Red[3];         // Orbital Distance Vector
+    float Orange[3];      // Desired Position 1 sec. from now
+    float Velocity[3];    // Desired Velocity
+    float FOrange[3];     //Final Orange
+    float targetAtt[3];
+ 
+    api.getMyZRState(MyState);
+    api.getOtherZRState(otherState);
+ 
+    if(!(MyState[0]>0.0f&&MyState[0]<0.64f&&MyState[1]>-0.2f&&MyState[1]<0.2f&&MyState[2]>-0.2f&&MyState[2]<0.2f)) AvoidSolarFlares();
+    
+    api.setControlMode(CTRL_PD,CTRL_PID);
+    
+    mathVecSubtract(stop,center,center,3);
+ 
+    float ph1=57*angles(0.0f, 0.0f, 0.5f, MyState[0], MyState[1], MyState[2]);
+    //angle phi for sphere
+    float ph2=57*angles(0.0f, 0.0f, 0.5f, poi1[0], poi1[1], poi1[2]);
+    //angle phi for poi1(instead of POI)
+ 
+    //DEBUG(("%f ph2", ph2));
+    game.getPOILoc(poi0,0);
+    game.getPOILoc(poi1,1);
+    game.getPOILoc(poi2,2);
+    
+    float d=DistFromObj(center,MyState);
+    DEBUG(("%f ",d));
+
+    float S[]={0,poi1[1],0};
+    float Radius=DistFromObj(S,poi1);
+    R=2.0*Radius;
+    if(stage!=3&&stage!=4) RTanTheta=R*tanf(0.1);
+
+    if(ph2<90||MyState[0]>0) Blue[1]=-1;//Up
+        else if(MyState[0]<0&&ph2>90)  Blue[1]=1;//Down
+
+    float D[]={0, poi1[1]*2.0, 0};//Center of Revolving
+  
+    mathVecSubtract(targetAtt,poi1,MyState,3);
+    mathVecNormalize(targetAtt,3);
+
+    mathVecCross(Pink,Blue,MyState); 
+    mathVecCross(DarkGreen,Pink,Blue);
+    mathVecScale(DarkGreen,DarkGreen,R,true);
+    mathVecScale(Red,Pink,RTanTheta,true);
+    mathVecAdd(Orange,DarkGreen,Red,3);
+    mathVecScale(Orange,Orange,R,true);
+	mathVecAdd(FOrange, Orange,D, 3);
+	mathVecSubtract(Velocity,FOrange,MyState,3);
+	
+    api.setAttitudeTarget(targetAtt);
+    // mathVecSubtract(Accel,Velocity,&MyState[3],3);
+    // mathVecScale(Force,Accel,4.45,false);
+
+    if(MyState[1]<1.1*(poi1[1]*2.0))//poi1 chosen instead of POI
+          api.setPositionTarget(FOrange);
+    else  api.setVelocityTarget(Velocity);
+    
+    float Earth[3]={0.64f,0.0f,0.0f};
+    
+    if(stage==-1){ api.setVelocityTarget(stop); if(clock==-1) stage=2;}
+    
+    //if(stage==0)  collect mmpk
+    
+    //if(stage==1) go in the shadow zone
+    
+    if(stage==2){
+                    if(game.alignLine(1)&&game.getMemoryFilled()==0) game.takePic(1);
+
+                    if(game.getMemoryFilled()==1) //stage++;
+                    stage=4;
+                    
+                    if(clock<=15&&clock!=-1) stage=-1; 
+                    
+                    //if(clock<=10&&clock!=-1) back in shadow zone
+                }
+    
+    if(stage==3){
+                    RTanTheta=R*tanf(0.2);
+                        
+                    if(game.alignLine(1)&&d<0.53&&d>0.42) game.takePic(1);
+                    
+                    if(game.getMemoryFilled()==2) stage++;
+                }
+                
+    if(stage==4){
+                    RTanTheta=R*tanf(0.24);
+                    
+                    if(game.getMemoryFilled()==0) stage=2;
+                    
+                    api.setAttitudeTarget(Earth);
+                    
+                    if(d>=0.53) game.uploadPic();
+                }
+
+    //if(stage==5) back in shadow + reset to stage2
+
+    time++;
+}
+//End page main
