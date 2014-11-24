@@ -1,0 +1,85 @@
+//Begin page functions
+bool CatchMemoryPack(float *MmPk)
+{ 
+    bool Ok=false;
+    
+    float go[3];
+    mathVecSubtract(go,MmPk,myState,3);
+    
+    if(game.hasMemoryPack(0,id)==false){
+    if(DistFromObj(MmPk,myState)>=0.30) api.setVelocityTarget(go);
+        else api.setPositionTarget(MmPk);}
+    
+    if(CheckVel!=1) api.setAttRateTarget(stop);
+    
+	if(isCloseTo(MmPk,0.05)==true) 
+	    {
+		    if(mathVecNormalize(myState+3,3)>=0.01f)
+		        {   
+		            api.setVelocityTarget(stop); 
+		            CheckVel=0.0f; 
+		        }
+		    else CheckVel=1;
+		        
+		    if(CheckVel==1) Rotate();
+	    }
+	else CheckVel=0.0f; 
+
+    if(game.hasMemoryPack(0,id)==true) Ok=true;
+    
+	return Ok;
+}
+
+void Rotate()
+{
+	float att[3];	
+	att[0]=att[1]=0.0f; 
+	att[2]=30*PI/180;
+	
+	api.setAttRateTarget(att);
+}
+
+float DistFromObj(float *target, float *who)
+{   
+    float dif[3];
+    mathVecSubtract (dif,target,who,3);
+    return mathVecMagnitude(dif,3);
+}
+
+bool isCloseTo(float *target, float d) 
+{
+	float dif[3];
+	mathVecSubtract (dif,target,myState,3);
+	return (mathVecMagnitude (dif,3) < d);
+}
+
+//End page functions
+//Begin page init
+ZRState myState;
+int id;
+int time;
+float CheckVel;
+float stop[3];
+
+void init()
+{
+    time=0;
+    CheckVel=0.0f;
+    memset(stop,0,3*sizeof(float));
+}
+//End page init
+//Begin page main
+void loop()
+{
+	api.getMyZRState(myState);
+	
+	if(time==0) myState[1]>0 ? id=1 : id=0 ;
+
+	float MemoryPackPos[2][3]={{-0.5f,-0.6f,0.0f},{-0.5f,0.6f,0.0f}};
+	
+	if (CatchMemoryPack(MemoryPackPos[id])==true) 
+	    {api.setPositionTarget(stop); api.setAttRateTarget(stop);}
+	
+	time++;
+}
+//End page main
