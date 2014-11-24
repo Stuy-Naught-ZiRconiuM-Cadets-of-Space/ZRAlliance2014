@@ -1,11 +1,15 @@
-// Yeech's Code
-// Not to be confused with the Vinci Code
+// Dencheng Code -- Vista
+// Not to be confused with the Da Vinci Code
 
 ZRState me;
 int state, POIID, picNum, solarFlareBegin;
-float POI[3],otherPOI[3],brakingPos[3],newBrakingPos[3],facing[3],uploadPos[3];
+float POI[3],otherPOI1[3],otherPOI2[3],brakingPos[3],newBrakingPos[3],facing[3],uploadPos[3],origin[3],dis;
 
 void init() {
+
+	for (int i = 0 ; i < 3 ; i++) {
+		origin[i] = 0.0;
+	}
 
 	solarFlareBegin = 1000; //Just to make the solar storm evasion code neater
 
@@ -15,14 +19,14 @@ void loop() {
 	
 	api.getMyZRState(me);
 
-	if(api.getTime() % 60 == 0 && state != 4) state = 0;
+	if(api.getTime() % 60 == 0 && state != 5) state = 0;
 	
 	DEBUG(("State = %d\n", state));
 
 	picNum = game.getMemoryFilled();
 
 	// Solar Storm Evasion
-
+	
 	if (api.getTime() == (solarFlareBegin - 1)) {
 	    DEBUG(("I shall now reboot.\n"));
 		game.turnOff();
@@ -38,34 +42,47 @@ void loop() {
 	}
 	else {
 	    DEBUG(("I don't know when the next flare is, so stop asking.\n"));
-	    solarFlareBegin = 1000; //Fixes a glitch that makes game.getNextFlare()
-	    //return 30s at some random point in the beginning of the game,
-	    //and from then on return -1 until the next actual flare, so that the 
-	    //SPHERE reboots for no reason.
+	    solarFlareBegin = 1000; /*Fixes a glitch that makes game.getNextFlare()
+	    return 30s at some random point in the beginning of the game,
+	    and from then on return -1 until the next actual flare, so that the 
+	    SPHERE reboots for no reason.*/
 	}
+
+	DEBUG(("I can still take %d photos", game.getMemorySize() - game.getMemoryFilled()));
 	
 	switch (state) {
 
 		case 0: // POI Selection
 			game.getPOILoc(POI,0);
-			game.getPOILoc(otherPOI,1);
-			if (distance(me,otherPOI) <= distance(me,POI)) {
-				POIID = 1;
-				for (int i = 0; i < 3; i++) POI[i] = otherPOI[i];
+			game.getPOILoc(otherPOI1,1);
+			game.getPOILoc(otherPOI2,2);
+			if (distance(me,otherPOI1) <= distance(me,POI)) {
+				if (distance(me,otherPOI2) <= distance(me,otherPOI1)){
+					POIID = 2;
+					for (int i = 0; i < 3; i++) POI[i] = otherPOI2[i];
+				}
+				else {
+					POIID = 1;
+					for (int i = 0; i < 3; i++) POI[i] = otherPOI1[i];
+				}
+			}
+			else if (distance(me,otherPOI2) <= distance(me,POI)) {
+				POIID = 2;
+				for (int i = 0; i < 3; i++) POI[i] = otherPOI2[i];
 			}
 			else POIID = 0;
 			
 			DEBUG(("POI Coors = %f,%f,%f\n",POI[0],POI[1],POI[2]));
 
 			for (int i = 0; i < 3; i++) {
-				brakingPos[i] = POI[i] * 2.0; //1.5625; <- let's try the outer zone
+				brakingPos[i] = POI[i] * 0.38 / mathVecMagnitude(POI,3); //inner
 			}
 			
 			state = 1;
 			break;
 
-		case 1: // Orbit Function here
-			if (AreWeThereYet(brakingPos,0.01,0.01)) state = 2;
+		case 1: // Move to pic taking site in inner zone
+			if (AreWeThereYet(brakingPos,0.1,0.1)) state = 2;
 			else {
 			    setPositionTarget(brakingPos);
 			    mathVecSubtract(facing,POI,me,3);
@@ -74,7 +91,7 @@ void loop() {
 			}
 			break;
 
-		case 2: // First Pic in inner Zone
+		case 2: // First Pic in inner zone
 			setPositionTarget(brakingPos);
 			mathVecSubtract(facing,POI,me,3);
 			mathVecNormalize(facing,3);
@@ -83,24 +100,31 @@ void loop() {
 
 			if (picNum > 0) {
 				DEBUG(("%d picture(s) have been taken\n", picNum));
-				uploadCalc(uploadPos,me);
-				api.setPositionTarget(uploadPos);
-				state = 5;
+
+				for (int i = 0; i < 3; i++) {
+					newBrakingPos[i] = POI[i] * 0.43 / mathVecMagnitude(POI,3);
+				}
+				setPositionTarget(newBrakingPos);
+				mathVecSubtract(facing,POI,me,3);
+				mathVecNormalize(facing,3);
+				api.setAttitudeTarget(facing);
+
+				state = 3;
 			}
+
 			break;
 
 		case 3: // Moving to outer zone
-			for (int i = 0; i < 3; i++) {
-				newBrakingPos[i] = POI[i] * 2.5;
-			}
+
 			
-			if (AreWeThereYet(newBrakingPos,0.01,0.01)) state = 4;
+			if (AreWeThereYet(newBrakingPos,0.15,0.15)) state = 4;
+			
 			else {
 			    api.setPositionTarget(newBrakingPos);
 			    mathVecSubtract(facing,POI,me,3);
 			    mathVecNormalize(facing,3);
 			    api.setAttitudeTarget(facing);
-			    game.takePic(POIID);
+			    //game.takePic(POIID);
 			}
 			break;
 		
@@ -109,32 +133,73 @@ void loop() {
 			mathVecSubtract(facing,POI,me,3);
 			mathVecNormalize(facing,3);
 			api.setAttitudeTarget(facing);
-            game.takePic(POIID);
 
-			if (picNum > 1) {
+			dis = distance(me, origin);
+			
+			DEBUG(("I am %f away from the origin\n", dis));
+
+			if(game.alignLine(POIID)) { // returns true
+            	DEBUG(("Alignment achieved\n"));
+				
+				if (dis < 0.53 && dis > 0.42){
+					game.takePic(POIID);
+					DEBUG(("Imma take a photo!")); // NVM problem solve
+				}
+				/*
+
+				else if (dis > 0.53) {
+					DEBUG(("I'm too far!"));
+
+					for (int i = 0 ; i < 3 ; i++) {
+						newBrakingPos[i] = newBrakingPos[i] * 0.95;
+					}
+
+					api.setPositionTarget(newBrakingPos);
+				}
+				else {
+					DEBUG(("I'm too close!"));
+					
+					for (int i = 0 ; i < 3 ; i++) {
+						newBrakingPos[i] = newBrakingPos[i] * 1.05;
+					}
+
+					api.setPositionTarget(newBrakingPos);
+				}
+				*/
+			}
+
+			else {
+				DEBUG(("Still not focused\n"));
+			}
+
+			if (picNum > 1) { // Doesn't take a picture, f(3x) and let u be 3x...
 				DEBUG(("%d picture(s) have been taken\n", picNum));
-				uploadCalc(uploadPos,me);
-				api.setPositionTarget(uploadPos);
+				uploadCalc(uploadPos,POI);
+				haulAssTowardsTarget(uploadPos,1.3);
 				state = 5;
 			}
+
 			break;
 
 		case 5: // Upload the picture
-			if (AreWeThereYet(uploadPos,0.01,0.01)) {
+			if (distance(origin,me) > 0.53) {
 				game.uploadPic();
 				DEBUG(("I just uploaded %d picture(s).\n", picNum));
 				DEBUG(("I am in state %d.\n", state)); //Why the f**k does it say it's in State 3???
 				// B/c ding-dongs forgot to type "break;"
-				state = 0;
+				
+				if (game.getMemoryFilled() == 0) {
+					state = 0;	
+				}
+				
 			}
 			else {
 
-				mathVecSubtract(facing,POI,me,3);
-				mathVecNormalize(facing,3);
-				api.setAttitudeTarget(facing);
-
-				api.setPositionTarget(uploadPos);
-				game.takePic(POIID);
+				//mathVecSubtract(facing,POI,me,3);
+				//mathVecNormalize(facing,3);
+				//api.setAttitudeTarget(facing);
+				haulAssTowardsTarget(uploadPos,1.3);
+				game.takePic(POIID); // why the f**k not
 			}
 
 			break;
@@ -159,9 +224,8 @@ float velocity(float p1[]){
 }
 
 void uploadCalc(float uploadPos[], float POI[]){
-	mathVecNormalize(me,3);
 	for (int i = 0; i < 3; i++) {
-		uploadPos[i] = me[i] * 0.55;
+		uploadPos[i] = POI[i] * 0.6 / mathVecMagnitude(POI,3);
 	}
 }
 
@@ -190,7 +254,7 @@ void setPositionTarget(float target[3]) {
 
 	if (minDistanceFromOrigin(target) > 0.30) {
 		api.setPositionTarget(target);
-		DEBUG(("JUST GO!!!"));
+		DEBUG(("JUST GO!!!\n"));
 	}
 	
 	else if (meMag >= 0.22 && meMag <= 0.32) {
@@ -199,7 +263,7 @@ void setPositionTarget(float target[3]) {
 		}
 		
 		api.setPositionTarget(myPos);
-		DEBUG(("TOO CLOSE"));
+		DEBUG(("TOO CLOSE\n"));
 	}
 	
 	else if (mathVecMagnitude(cross,3) < 0.05 && inner > 0.95 && inner < 1.05) {
@@ -225,7 +289,7 @@ void setPositionTarget(float target[3]) {
 		}
 		
 		for (int i = 0; i < 3; i++) {
-			mePrep[i] = (mePrep[i] * 0.32 * meMag) / (sqrtf(meMag*meMag - 0.32*0.32));
+			mePrep[i] = (mePrep[i] * 0.325 * meMag) / (sqrtf(meMag*meMag - 0.32*0.32));
 		}
 		
 		mathVecSubtract(path,mePrep,myPos,3);
@@ -238,7 +302,7 @@ void setPositionTarget(float target[3]) {
 
 		api.setPositionTarget(temp);
 		
-		DEBUG(("TAKING THE TANGENT"));
+		DEBUG(("TAKING THE TANGENT\n"));
 	}
 }
 
@@ -286,4 +350,34 @@ float minDistanceFromOrigin(float target[]) {
 		
 		return mathVecMagnitude(dis,3);
 	}
+}
+/*
+float opponentTarget(){
+	ZRState other;
+	api.getOtherZRState(other);
+
+	float otherVel[3], POIs[3][3], distances[3], projection[3], prep[3];
+
+	for (int i = 0 ; i < 3 ; i++) {
+		otherVel[i] = other[3 + i]*3;
+		game.getPOILoc(POIs[i],i);
+	}
+
+	mathVecAdd(other,otherVel,3);
+
+	for (int i = 0 ; i < 3 ; i++) {
+		projection = mathVecProject(POIs[i],)
+	}
+
+}*/
+
+void haulAssTowardsTarget(float target[],float multipler) {
+	
+	float newTarget[3];
+	
+	for (int i = 0 ; i < 3 ; i++) {
+		newTarget[i] = target[i] * multipler;
+	}
+
+	api.setPositionTarget(newTarget);
 }
