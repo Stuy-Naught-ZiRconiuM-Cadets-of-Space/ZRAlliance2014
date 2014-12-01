@@ -92,7 +92,7 @@ void loop() {
 		case GO_TO_SHADOW:
 			//DEBUG(("IMPLEMENT LATER"));
 
-			setPositionTarget(uploadPos,1);
+			setPositionTarget(uploadPos,5);
 			api.setAttitudeTarget(earth);
 			if (distance(uploadPos,myState) < 0.05) {
 				game.uploadPic();
