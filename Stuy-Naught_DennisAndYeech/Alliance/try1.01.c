@@ -98,7 +98,8 @@ void loop() {
 				game.uploadPic();
 			}
 			if (memoryFilled == 0) {
-				state = Chose_POI;
+				DEBUG(("WE'LL JUST STAY HERE"));
+				//state = Chose_POI;
 			}
 			break;
 	}
