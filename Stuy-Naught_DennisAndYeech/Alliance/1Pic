@@ -11,7 +11,6 @@ float POILoc[3];
 float facing[3];
 float earth[3];
 float uploadPos[3];
-float currentFacing[3];
 
 #define Chose_POI 0
 #define TakePic_Inner 1
@@ -40,7 +39,6 @@ void loop() {
 	time++;
 	nextFlare = game.getNextFlare();
 	memoryFilled = game.getMemoryFilled();
-	memcpy(currentFacing, myState+6, 3*sizeof(float));
 
 	switch (state) {
 		case Chose_POI:
@@ -66,7 +64,7 @@ void loop() {
 				brakingPt[i] = 0.5 * brakingPt[i] / mathVecMagnitude(brakingPt,3);
 			}
 
-			mathVecRotationXZ(brakingPt,1);
+			mathVecRotationXZ(brakingPt,0.2);
 			setPositionTarget(brakingPt,3);
 			mathVecSubtract(facing,origin,myState,3);
 			api.setAttitudeTarget(facing);
@@ -86,7 +84,7 @@ void loop() {
 			api.setAttitudeTarget(facing);
 			if (game.alignLine(bestPOI)) {
 				game.takePic(bestPOI);
-				DEBUG(("\nI AM THE CHAMPION MY FRIENDS!"));
+				DEBUG(("I AM THE CHAMPION MY FRIENDS!"));
 			}
 
 			break;
@@ -94,12 +92,13 @@ void loop() {
 		case GO_TO_SHADOW:
 			//DEBUG(("IMPLEMENT LATER"));
 
-			setPositionTarget(uploadPos,1);
-			mathVecSubtract(facing,earth,currentFacing,3);
-			api.setAttitudeTarget(facing);
-			game.uploadPic();
+			setPositionTarget(uploadPos,2);
+			api.setAttitudeTarget(earth);
+			if (distance(uploadPos,myState) < 0.05) {
+				game.uploadPic();
+			}
 			if (memoryFilled == 0) {
-				DEBUG(("\nWE'LL JUST STAY HERE"));
+				DEBUG(("WE'LL JUST STAY HERE"));
 				//state = Chose_POI;
 			}
 			break;
