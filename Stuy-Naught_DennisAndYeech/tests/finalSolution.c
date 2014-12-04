@@ -7,7 +7,7 @@ void init() {
 	earth[2] = 0;
 }
 
-void main() {
+void loop() {
     api.getMyZRState(myState);
 	setPositionTarget(earth,3);
 	DEBUG(("trololololololol"));

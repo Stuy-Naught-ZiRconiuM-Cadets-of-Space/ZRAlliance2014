@@ -92,11 +92,12 @@ void loop() {
 		case GO_TO_SHADOW:
 			//DEBUG(("IMPLEMENT LATER"));
 
-			setPositionTarget(uploadPos);
+			setPositionTarget(uploadPos,1);
 			api.setAttitudeTarget(earth);
-			uploadPic();
+			game.uploadPic();
 			if (memoryFilled == 0) {
-				state = Chose_POI;
+				DEBUG(("WE'LL JUST STAY HERE"));
+				//state = Chose_POI;
 			}
 			break;
 	}

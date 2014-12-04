@@ -25,7 +25,7 @@ void init() {
 	earth[0] = 0.64;
 	earth[1] = 0;
 	earth[2] = 0;
-	uploadPos[0] = 0.35;
+	uploadPos[0] = 0.2;
 	uploadPos[1] = 0;
 	uploadPos[2] = 0;
 }
@@ -92,11 +92,9 @@ void loop() {
 		case GO_TO_SHADOW:
 			//DEBUG(("IMPLEMENT LATER"));
 
-			setPositionTarget(uploadPos,2);
+			setPositionTarget(uploadPos,1);
 			api.setAttitudeTarget(earth);
-			if (distance(uploadPos,myState) < 0.05) {
-				game.uploadPic();
-			}
+			game.uploadPic();
 			if (memoryFilled == 0) {
 				DEBUG(("WE'LL JUST STAY HERE"));
 				//state = Chose_POI;
