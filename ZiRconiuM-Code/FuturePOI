@@ -1,0 +1,32 @@
+//---------------------------------------------------------------------------------
+//---  look1 (INPUT)  is where the POI is now
+//---  look2 (OUTPUT) is where the function calculates the POI will be in 1 second
+//---------------------------------------------------------------------------------
+
+void poiPlus1(float look1[], float look2[]){
+    if(look1[2] <= 0) 
+        look2[0] = cosf(acosf( look1[0]/sqrt(look1[0]*look1[0] + look1[2]*look1[2])) 
+                                  -0.1)*sqrt(look1[0]*look1[0] + look1[2]*look1[2]);
+    else 
+        look2[0] =-cosf(acosf(-look1[0]/sqrt(look1[0]*look1[0] + look1[2]*look1[2])) 
+                                 - 0.1)*sqrt(look1[0]*look1[0] + look1[2]*look1[2]);
+    look2[1]     = look1[1];
+    look2[2]     = sinf(asinf( look1[2]/sqrt(look1[0]*look1[0] + look1[2]*look1[2])) 
+                                 - 0.1)*sqrt(look1[0]*look1[0] + look1[2]*look1[2]);
+}
+//---------------------------------------------------------------------------------
+//---  poiBef is where the POI is now (Before)
+//---  poiAft  is where the function calculates the POI will be in t second (After)
+//---------------------------------------------------------------------------------
+
+void poiFuture(float poiBef[], float poiAft[], int poiId, int t){
+    float poiInt[3];
+    memcpy (poiInt, poiBef, 3*sizeof(float));
+    for (int s=0; s<t; s++){
+        poiPlus1(poiInt, poiAft);
+        if (poiAft[0] > 0){     //--- fix error if poiAfter x is positive
+            poiAft[2] =-poiInt[2];
+        }
+        memcpy (poiInt, poiAft, 3*sizeof(float));
+    }
+}
