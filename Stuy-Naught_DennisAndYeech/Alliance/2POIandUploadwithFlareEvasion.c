@@ -24,15 +24,11 @@ float percentFuelRemaining;
 void init() {
 	time = -1;
 	state = 0;
-	origin[0] = 0;
-	origin[1] = 0;
-	origin[2] = 0;
-	earth[0] = 0.64;
-	earth[1] = 0;
-	earth[2] = 0;
-	uploadPos[0] = 0.5;
-	uploadPos[1] = 0;
-	uploadPos[2] = 0;
+	origin[0] =	origin[1] = origin[2] = 0f;
+	earth[0] = 0.64f;
+	earth[1] = earth[2] = 0f;
+	uploadPos[0] = 0.5f;
+	uploadPos[1] = uploadPos[2] = 0f;
 	lastState = Chose_POI;
 }
 
@@ -175,11 +171,10 @@ void loop() {
 }
 
 float distance(float p1[], float p2[]){
-	float d = 0;
-	for(int i=0; i < 3; i++){
-		d += (p2[i]-p1[i])*(p2[i]-p1[i]);
-	}
-	return sqrtf(d);
+	// Thanks Cornel
+	float diff[3];
+	mathVecSubtract(diff,p1,p2,3);
+	return mathVecMagnitude(diff,3);
 }
 
 float angle(float a[], float b[], float c[]) {
