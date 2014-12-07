@@ -77,13 +77,14 @@ void loop() {
 			float currentMinDist = distance(POI[0],myState);
 			bestPOI = 0;
 			for (i = 1 ; i < 3 ; i++)  {
-				if (distance(POI[i],myState) < currentMinDist) {
-					currentMinDist = distance(POI[1],myState);
-					bestPOI = i;
-				}
 				if (POI[i][1] == 0) {
 					middlePOI = i;
 				}
+				else if (distance(POI[i],myState) < currentMinDist) {
+					currentMinDist = distance(POI[1],myState);
+					bestPOI = i;
+				}
+
 			}
 
 			memcpy(POILoc, POI[bestPOI], 3*sizeof(float));
