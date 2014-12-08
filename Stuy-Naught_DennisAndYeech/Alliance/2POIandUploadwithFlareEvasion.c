@@ -24,11 +24,11 @@ float percentFuelRemaining;
 void init() {
 	time = -1;
 	state = 0;
-	origin[0] =	origin[1] = origin[2] = 0f;
+	origin[0] = origin[1] = origin[2] = 0.f;
 	earth[0] = 0.64f;
-	earth[1] = earth[2] = 0f;
-	uploadPos[0] = 0.5f;
-	uploadPos[1] = uploadPos[2] = 0f;
+	earth[1] = earth[2] = 0.f;
+	uploadPos[0] = 0.55f;
+	uploadPos[1] = uploadPos[2] = 0.f;
 	lastState = Chose_POI;
 }
 
@@ -113,14 +113,14 @@ void loop() {
 
 				mathVecRotateToOptimal(brakingPt);
 
-				setPositionTarget(brakingPt,1);
+				api.setPositionTarget(brakingPt);
 				mathVecSubtract(facing,origin,myState,3);
 				api.setAttitudeTarget(facing);
 
 				state = TakePic_Two;
 			}
 
-			setPositionTarget(brakingPt,2);
+			setPositionTarget(brakingPt,1);
 			mathVecSubtract(facing,origin,myState,3);
 			api.setAttitudeTarget(facing);
 			if (game.alignLine(bestPOI)) {
@@ -137,7 +137,7 @@ void loop() {
 				state = GO_TO_SHADOW;
 			}
 			
-			setPositionTarget(brakingPt,2);
+			api.setPositionTarget(brakingPt);
 			mathVecSubtract(facing,origin,myState,3);
 			api.setAttitudeTarget(facing);
 
@@ -153,7 +153,6 @@ void loop() {
 		case GO_TO_SHADOW:
 			//DEBUG(("IMPLEMENT LATER"));
 			{
-
 			setPositionTarget(uploadPos,1);
 			mathVecSubtract(facing,earth,myState,3);
 			api.setAttitudeTarget(facing);
