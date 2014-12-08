@@ -67,6 +67,10 @@ void loop() {
 		DEBUG(("\nnextFlare: %d\nOH F**K IT'S A FLARE!!!!!\n",nextFlare));
 	}
 
+	if (time >= 230) {
+		state = GO_TO_SHADOW;
+	}
+
 	switch (state) {
 		case Chose_POI:
 			{
@@ -248,7 +252,7 @@ void setPositionTarget(float target[3], float multiplier) {
 	
 	meMag = mathVecMagnitude(myPos,3);
 	
-	if (minDistanceFromOrigin(target) > 0.33) {
+	if (minDistanceFromOrigin(target) > 0.34) {
 		//if (distance(myState, target) < 0.6) { // Save braking distance
 			api.setPositionTarget(target);
 		//}
@@ -268,7 +272,7 @@ void setPositionTarget(float target[3], float multiplier) {
 		DEBUG(("GOING STRAIGHT\n"));
 	}
 	
-	else if (meMag >= 0.22 && meMag <= 0.32) {
+	else if (meMag >= 0.22 && meMag <= 0.34) {
 		for (int i = 0; i < 3; i++) {
 			myPos[i] = myPos[i] * 1.6;
 		}
@@ -288,7 +292,7 @@ void setPositionTarget(float target[3], float multiplier) {
 		}
 		
 		for (int i = 0; i < 3; i++) {
-			mePrep[i] = (mePrep[i] * 0.325 * meMag) / (sqrtf(meMag*meMag - 0.32*0.32));
+			mePrep[i] = (mePrep[i] * 0.325 * meMag) / (sqrtf(meMag*meMag - 0.34*0.34));
 		}
 		
 		mathVecSubtract(path,mePrep,myPos,3);
