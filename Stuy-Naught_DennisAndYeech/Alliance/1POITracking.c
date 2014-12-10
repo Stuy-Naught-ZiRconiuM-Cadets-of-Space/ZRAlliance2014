@@ -5,12 +5,10 @@
 
 float myState[12];
 float POI[3][3];
-float origin[3];
 float initialPosition[3];
 int time;
 int state;
 int bestPOI;
-int middlePOI;
 int nextFlare;
 int memoryFilled;
 int nextFlareTime;
@@ -26,7 +24,6 @@ void init() {
 	api.getMyZRState(myState);
 	time = -1;
 	state = 0;
-	origin[0] = origin[1] = origin[2] = 0.f;
 	earth[0] = 0.64f;
 	earth[1] = earth[2] = 0.f;
 	uploadPos[0] = 0.55f;
@@ -58,7 +55,7 @@ void loop() {
 	if (nextFlare == -1) {
 		DEBUG(("\nI don't know when the next flare is, so stop asking.\n"));
 	}
-	else if (nextFlare <= 30) {
+	else if (nextFlare <= 15) {
 		if (lastState != GO_TO_SHADOW) {
 			lastState = state;
 		}
@@ -80,10 +77,7 @@ void loop() {
 			float currentMinDist = distance(POI[0],initialPosition);
 			bestPOI = 0;
 			for (i = 1 ; i < 3 ; i++)  {
-				if (POI[i][1] == 0) {
-					middlePOI = i;
-				}
-				else if (distance(POI[i],initialPosition) < currentMinDist) {
+				if (distance(POI[i],initialPosition) < currentMinDist) {
 					currentMinDist = distance(POI[1],initialPosition);
 					bestPOI = i;
 				}
@@ -95,12 +89,14 @@ void loop() {
 			memcpy(brakingPt, POILoc, 3*sizeof(float));
 
 			for (i = 0 ; i < 3 ; i++) {
-				brakingPt[i] = 0.5 * brakingPt[i] / mathVecMagnitude(brakingPt,3);
+				brakingPt[i] = 0.4 * brakingPt[i] / mathVecMagnitude(brakingPt,3);
 			}
 
-			mathVecRotateToOptimal(brakingPt);
+			mathVecRotateToBottom(POILoc);
+
+			mathVecRotateToBottom(brakingPt);
 			setPositionTarget(brakingPt,1);
-			mathVecSubtract(facing,origin,myState,3);
+			mathVecSubtract(facing,POILoc,myState,3);
 			api.setAttitudeTarget(facing);
 
 			state = TakePic_One;
@@ -111,24 +107,21 @@ void loop() {
 		case TakePic_One:
 			{
 			if(memoryFilled != 0) {
-				memcpy(POILoc, POI[middlePOI], 3*sizeof(float));
-				memcpy(brakingPt, POILoc, 3*sizeof(float));
 
 				for (i = 0 ; i < 3 ; i++) {
 					brakingPt[i] = 0.5 * brakingPt[i] / mathVecMagnitude(brakingPt,3);
 				}
 
-				mathVecRotateToOptimal(brakingPt);
-
+				mathVecRotateToTop(brakingPt);
 				api.setPositionTarget(brakingPt);
-				mathVecSubtract(facing,origin,myState,3);
+				mathVecSubtract(facing,POILoc,myState,3);
 				api.setAttitudeTarget(facing);
 
 				state = TakePic_Two;
 			}
 
 			setPositionTarget(brakingPt,1);
-			mathVecSubtract(facing,origin,myState,3);
+			mathVecSubtract(facing,POILoc,myState,3);
 			api.setAttitudeTarget(facing);
 			if (game.alignLine(bestPOI)) {
 				game.takePic(bestPOI);
@@ -145,11 +138,11 @@ void loop() {
 			}
 			
 			api.setPositionTarget(brakingPt);
-			mathVecSubtract(facing,origin,myState,3);
+			mathVecSubtract(facing,POILoc,myState,3);
 			api.setAttitudeTarget(facing);
 
-			if (game.alignLine(middlePOI)) {
-				game.takePic(middlePOI);
+			if (game.alignLine(bestPOI)) {
+				game.takePic(bestPOI);
 				DEBUG(("I AM THE CHAMPION MY FRIENDS!"));
 			}
 
@@ -217,8 +210,15 @@ void mathVecRotationXZ(float a[], float angle) {
 	a[2] = -sinf(angle)*xorg + cosf(angle)*a[2];
 }
 
-void mathVecRotateToOptimal(float a[]) {
+void mathVecRotateToBottom(float a[]) {
 	// Rotates the picture vector so that it's close to da shadow zone
+	a[2] = sqrtf(a[0]*a[0] + a[2]*a[2]); // Rotate so that it's vertical and pointing down
+	a[0] = 0;
+	mathVecRotationXZ(a,-0.1); // So it's not exactly at the top
+}
+
+void mathVecRotateToTop(float a[]){
+	// Rotates the vector a to the top
 	a[2] = -sqrtf(a[0]*a[0] + a[2]*a[2]); // Rotate so that it's vertical and pointing down
 	a[0] = 0;
 	mathVecRotationXZ(a,0.1); // So it's not exactly at the top
@@ -249,15 +249,13 @@ void setPositionTarget(float target[3], float multiplier) {
 	
 	float myPos[3],meMag;
 	
-	for(int i = 0; i < 3; i++) {
-		myPos[i] = myState[i];
-	}
+	memcpy(myPos, myState, 3*sizeof(float));
 	
 	meMag = mathVecMagnitude(myPos,3);
 	
-	if (minDistanceFromOrigin(target) > 0.34) {
+	if (minDistanceFromOrigin(target) > 0.315) {
 		//if (distance(myState, target) < 0.6) { // Save braking distance
-			api.setPositionTarget(target);
+		api.setPositionTarget(target);
 		//}
 
 		//else { // Or haul ass towards target
@@ -275,9 +273,9 @@ void setPositionTarget(float target[3], float multiplier) {
 		DEBUG(("GOING STRAIGHT\n"));
 	}
 	
-	else if (meMag >= 0.22 && meMag <= 0.34) {
+	else if (meMag >= 0.22 && meMag <= 0.315) {
 		for (int i = 0; i < 3; i++) {
-			myPos[i] = myPos[i] * 1.6;
+			myPos[i] = myPos[i] * 2;
 		}
 		
 		api.setPositionTarget(myPos);
@@ -295,7 +293,7 @@ void setPositionTarget(float target[3], float multiplier) {
 		}
 		
 		for (int i = 0; i < 3; i++) {
-			mePrep[i] = (mePrep[i] * 0.325 * meMag) / (sqrtf(meMag*meMag - 0.34*0.34));
+			mePrep[i] = (mePrep[i] * 0.325 * meMag) / (sqrtf(meMag*meMag - 0.315*0.315));
 		}
 		
 		mathVecSubtract(path,mePrep,myPos,3);
