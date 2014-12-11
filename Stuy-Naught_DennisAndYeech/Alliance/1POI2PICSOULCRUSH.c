@@ -28,6 +28,8 @@ void init() {
 	earth[1] = earth[2] = 0.f;
 	uploadPos[0] = 0.55f;
 	uploadPos[1] = uploadPos[2] = 0.f;
+	POILoc[0] = POILoc[1] = POILoc[2] = 0.f;
+	bestPOI = 0; // Stupid compiler
 	lastState = Chose_POI;
 	memcpy(initialPosition,myState,3*sizeof(float));
 }
@@ -38,7 +40,6 @@ void loop() {
 	api.getMyZRState(myState);
 	DEBUG(("\n%d\n",state));
 
-	for (i = 0; i < 3; i++) {game.getPOILoc(POI[i], i);}
 	time++;
 	nextFlare = game.getNextFlare();
 	memoryFilled = game.getMemoryFilled();
@@ -49,7 +50,7 @@ void loop() {
 	}
 
 	// FLARE EVASION
-
+	/* F**K this for now
 	nextFlare = game.getNextFlare();
 
 	if (nextFlare == -1) {
@@ -66,6 +67,7 @@ void loop() {
 		state = GO_TO_SHADOW;
 		DEBUG(("\nnextFlare: %d\nOH NO IT'S A FLARE!!!!!\n",nextFlare));
 	}
+	*/
 
 	if (time >= 230) {
 		state = GO_TO_SHADOW;
@@ -74,6 +76,8 @@ void loop() {
 	switch (state) {
 		case Chose_POI:
 			{
+			for (i = 0; i < 3; i++) {game.getPOILoc(POI[i], i);}
+
 			float currentMinDist = distance(POI[0],initialPosition);
 			bestPOI = 0;
 			for (i = 1 ; i < 3 ; i++)  {
@@ -89,12 +93,13 @@ void loop() {
 			memcpy(brakingPt, POILoc, 3*sizeof(float));
 
 			for (i = 0 ; i < 3 ; i++) {
-				brakingPt[i] = 0.4 * brakingPt[i] / mathVecMagnitude(brakingPt,3);
+				brakingPt[i] = 0.419 * brakingPt[i] / mathVecMagnitude(brakingPt,3);
 			}
 
-			mathVecRotateToBottom(POILoc);
+			mathVecRotateToTop(POILoc);
 
-			mathVecRotateToBottom(brakingPt);
+			mathVecRotateToTop(brakingPt);
+			mathVecRotationXZ(brakingPt,-0.4);
 			setPositionTarget(brakingPt,1);
 			mathVecSubtract(facing,POILoc,myState,3);
 			api.setAttitudeTarget(facing);
@@ -109,11 +114,11 @@ void loop() {
 			if(memoryFilled != 0) {
 
 				for (i = 0 ; i < 3 ; i++) {
-					brakingPt[i] = 0.5 * brakingPt[i] / mathVecMagnitude(brakingPt,3);
+					brakingPt[i] = 0.421 * brakingPt[i] / mathVecMagnitude(brakingPt,3);
 				}
 
-				mathVecRotateToTop(brakingPt);
-				api.setPositionTarget(brakingPt);
+				mathVecRotationXZ(POILoc,-0.5);
+				setPositionTarget(brakingPt,2);
 				mathVecSubtract(facing,POILoc,myState,3);
 				api.setAttitudeTarget(facing);
 
@@ -137,7 +142,7 @@ void loop() {
 				state = GO_TO_SHADOW;
 			}
 			
-			api.setPositionTarget(brakingPt);
+			setPositionTarget(brakingPt,2);
 			mathVecSubtract(facing,POILoc,myState,3);
 			api.setAttitudeTarget(facing);
 
@@ -209,20 +214,30 @@ void mathVecRotationXZ(float a[], float angle) {
 	a[0] = cosf(angle)*a[0] + sinf(angle)*a[2];
 	a[2] = -sinf(angle)*xorg + cosf(angle)*a[2];
 }
-
+/*
 void mathVecRotateToBottom(float a[]) {
 	// Rotates the picture vector so that it's close to da shadow zone
 	a[2] = sqrtf(a[0]*a[0] + a[2]*a[2]); // Rotate so that it's vertical and pointing down
 	a[0] = 0;
-	mathVecRotationXZ(a,-0.1); // So it's not exactly at the top
+	mathVecRotationXZ(a,-0.6); // So it's not exactly at the top
+}
+*/
+
+
+void mathVecRotateToHorizontal(float a[]) {
+	// Rotates the vector to negative x
+	a[0] = -sqrtf(a[0]*a[0] + a[2]*a[2]);
+	a[2] = 0;
+	mathVecRotationXZ(a,-0.5);
 }
 
 void mathVecRotateToTop(float a[]){
 	// Rotates the vector a to the top
 	a[2] = -sqrtf(a[0]*a[0] + a[2]*a[2]); // Rotate so that it's vertical and pointing down
 	a[0] = 0;
-	mathVecRotationXZ(a,0.1); // So it's not exactly at the top
+	mathVecRotationXZ(a,0.7); // So it's not exactly at the top
 }
+
 
 float minDistanceFromOrigin(float target[]) {
 	float temp[3] = {0,0,0}; //temp is the origin
@@ -243,6 +258,7 @@ float minDistanceFromOrigin(float target[]) {
 		return mathVecMagnitude(temp,3);
 	}
 }
+
 
 void setPositionTarget(float target[3], float multiplier) {
 	api.getMyZRState(myState);
