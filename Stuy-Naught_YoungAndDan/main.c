@@ -7,6 +7,7 @@ float POI[3][3];
 float origin[3];
 float initialPosition[3];
 int time;
+int takePic;
 int state;
 int bestPOI;
 int memoryFilled;
@@ -23,6 +24,7 @@ void init() {
 	api.getMyZRState(myState);
 	time = -1;
 	state = 0;
+	takePic = -1;
 	origin[0] = origin[1] = origin[2] = 0.f;
 	earth[0] = 0.64f;
 	earth[1] = earth[2] = 0.f;
@@ -33,6 +35,13 @@ void init() {
 }
 
 void loop() {
+    if(takePic >0){
+        takePic--;
+    }
+    else if(takePic == 0){
+        game.takePic(bestPOI);
+        takePic--;
+    }
 	int i; // COUNTER!!!!
 
 	api.getMyZRState(myState);
@@ -76,8 +85,9 @@ void loop() {
 			memcpy(brakingPt, POILoc, 3*sizeof(float));
 
             
-            if(fabsf(brakingPt[0])>0.14){
-                getPOILoc(brakingPt,bestPOI,25);
+            if(fabsf(brakingPt[0])>0.15){
+                getPOILoc(brakingPt,bestPOI,24);
+                takePic = 24;
             }
             else{
                 if(brakingPt[2] < 0){
@@ -160,11 +170,14 @@ void mathVecRotationXZ(float a[], float angle) {
 	a[2] = -sinf(angle)*xorg + cosf(angle)*a[2];
 }
 
-void mathVecRotateToBottom(float a[]) {
-	// Rotates the picture vector so that it's close to da shadow zone
-	a[2] = sqrtf(a[0]*a[0] + a[2]*a[2]); // Rotate so that it's vertical and pointing down
-	a[0] = 0;
-	mathVecRotationXZ(a,-0.3); // So it's not exactly at the top
+int mathVecRotateToBottom(float a[]) {
+	// Rotates the vector a to the top
+	int temp = 0;
+	while((a[0] !=  0)&&(a[2]>0)){
+	    getPOILoc(a,bestPOI,temp);
+	    temp++;
+	}
+	return temp;
 }
 
 void mathVecRotateToHorizontal(float a[]) {
@@ -174,11 +187,14 @@ void mathVecRotateToHorizontal(float a[]) {
 	mathVecRotationXZ(a,-0.5);
 }
 
-void mathVecRotateToTop(float a[]){
+int mathVecRotateToTop(float a[]){
 	// Rotates the vector a to the top
-	a[2] = -sqrtf(a[0]*a[0] + a[2]*a[2]); // Rotate so that it's vertical and pointing down
-	a[0] = 0;
-	mathVecRotationXZ(a,0.3); // So it's not exactly at the top
+	int temp = 0;
+	while((a[0] !=  0)&&(a[2]<0)){
+	    getPOILoc(a,bestPOI,temp);
+	    temp++;
+	}
+	return temp;
 }
 
 float minDistanceFromOrigin(float target[3]) {
