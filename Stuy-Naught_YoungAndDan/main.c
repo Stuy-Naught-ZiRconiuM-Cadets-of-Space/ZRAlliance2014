@@ -75,12 +75,9 @@ void loop() {
 
 			memcpy(brakingPt, POILoc, 3*sizeof(float));
 
-			for (i = 0 ; i < 3 ; i++) {
-				brakingPt[i] = 0.65 * brakingPt[i] / mathVecMagnitude(brakingPt,3);
-			}
             
             if(fabsf(brakingPt[0])>0.14){
-                getPOILoc(brakingPt,bestPOI,20);
+                getPOILoc(brakingPt,bestPOI,25);
             }
             else{
                 if(brakingPt[2] < 0){
@@ -90,6 +87,10 @@ void loop() {
                     mathVecRotateToBottom(brakingPt);
                 }    
             }
+            
+            for (i = 0 ; i < 3 ; i++) {
+				brakingPt[i] = 0.5 * brakingPt[i] / mathVecMagnitude(brakingPt,3);
+			}
             
 			setPositionTarget(brakingPt,1);
 			mathVecSubtract(facing,origin,myState,3);
