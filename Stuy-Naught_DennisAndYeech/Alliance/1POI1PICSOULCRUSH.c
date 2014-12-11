@@ -15,6 +15,7 @@ int nextFlareTime;
 int lastState;
 float brakingPt[3];
 float POILoc[3];
+float origin[3];
 float facing[3];
 float earth[3];
 float uploadPos[3];
@@ -29,6 +30,7 @@ void init() {
 	uploadPos[0] = 0.5f;
 	uploadPos[1] = uploadPos[2] = 0.f;
 	POILoc[0] = POILoc[1] = POILoc[2] = 0.f;
+	origin[0] = origin[1] = origin[3] = 0.f;
 	bestPOI = 0; // Stupid compiler
 	lastState = Chose_POI;
 	memcpy(initialPosition,myState,3*sizeof(float));
@@ -90,19 +92,19 @@ void loop() {
 			}
 
 			if (POILoc[2] > 0) {
-				mathVecRotateToTop(POILoc);
-				mathVecRotateToTop(brakingPt);
-				//mathVecRotationXZ(brakingPt,-0.4);
+				mathVecRotateToBottom(POILoc);
+				mathVecRotateToBottom(brakingPt);
+				//mathVecRotationXZ(brakingPt,0.5);
 			}
 
 			else {
-				mathVecRotateToBottom(POILoc);
-				mathVecRotateToBottom(brakingPt);
-				//mathVecRotationXZ(brakingPt,0.4);
+				mathVecRotateToTop(POILoc);
+				mathVecRotateToTop(brakingPt);
+				//mathVecRotationXZ(brakingPt,-0.5);
 			}
 
 			setPositionTarget(brakingPt,1);
-			mathVecSubtract(facing,POILoc,brakingPt,3);
+			mathVecSubtract(facing,origin,brakingPt,3);
 			api.setAttitudeTarget(facing);
 
 			state = TakePic_One;
