@@ -79,13 +79,8 @@ void loop() {
 				brakingPt[i] = 0.65 * brakingPt[i] / mathVecMagnitude(brakingPt,3);
 			}
             
-            if((fabsf(brakingPt[0])>0.14)&&(brakingPt[1] > 0.15)){
-                if(brakingPt[2] > 0){
-    			    mathVecRotateToTop(brakingPt);
-                }
-                else{
-                    mathVecRotateToBottom(brakingPt);
-                }
+            if(fabsf(brakingPt[0])>0.14){
+                getPOILoc(brakingPt,bestPOI,20);
             }
             else{
                 if(brakingPt[2] < 0){
@@ -291,6 +286,23 @@ bool destroySouls(){
     }
     return false;
 }
+
+getPOILoc(float pos[3], int id, float t) { 
+    float POILoc[3];
+    game.getPOILoc(POILoc, id);
+    
+    for (int i = 0; i < 3; i++) {
+        pos[0] = POILoc[2] * sinf(0.1 * t) - POILoc[0] * cosf(0.1 * t);
+        pos[1] = POILoc[1];
+        pos[2] = -(POILoc[2] * cosf(0.1 * t) + POILoc[0] * sinf(0.1 * t));
+    }
+    
+    if (pos[0] >= 0) {
+        pos[0] *= -1;
+        pos[2] *= -1;
+    }
+    
+} 
 
 bool inShadow(ZRState other, float target[3], int t){
     if((other[1]+other[4]*t)*(other[1]+other[4]*t) + (other[2]+other[5]*t)*(other[2]+other[5]*t) <0.04){ //projected coor is in the shadow
