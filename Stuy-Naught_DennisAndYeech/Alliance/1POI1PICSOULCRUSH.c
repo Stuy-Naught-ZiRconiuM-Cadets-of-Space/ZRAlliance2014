@@ -47,9 +47,9 @@ void loop() {
 	memoryFilled = game.getMemoryFilled();
 	percentFuelRemaining = game.getFuelRemaining() * 100 / 90.0;
 
-	if (time % 60 == 0) {
-		state = Chose_POI;
-	}
+	//if (time % 60 == 0) {
+	//	state = Chose_POI;
+	//}
 
 	// FLARE EVASION
 	nextFlare = game.getNextFlare();
