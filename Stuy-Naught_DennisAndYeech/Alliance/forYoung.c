@@ -89,17 +89,16 @@ void loop() {
 		case GO_TO_SHADOW:
 			//DEBUG(("IMPLEMENT LATER"));
 			{
-			setPositionTarget(uploadPos,1);
+			if(!destroySouls()) {
+				setPositionTarget(uploadPos,1);
+			}
 			mathVecSubtract(facing,earth,myState,3);
 			api.setAttitudeTarget(facing);
 			game.uploadPic();
-			DEBUG(("WE'LL JUST STAY HERE"));
-			
-			
-			// YOUNG INSERT YOUR CRUSH SOUL CODE HERE
-
-
-
+			if (memoryFilled == 0) {
+				DEBUG(("WE'LL JUST STAY HERE"));
+				state = lastState;
+			}
 			break;
 			}
 	}
@@ -110,23 +109,6 @@ float distance(float p1[], float p2[]){
 	float diff[3];
 	mathVecSubtract(diff,p1,p2,3);
 	return mathVecMagnitude(diff,3);
-}
-
-float angle(float a[], float b[], float c[]) {
-    //returns the measure of angle abc
-    float side1[3], side2[3], cosine;
-    
-    for (int i = 0; i < 3; i++) side1[i] = a[i] - c[i];
-    cosine = - mathVecMagnitude(side1,3) * mathVecMagnitude(side1,3);
-    for (int i = 0; i < 3; i++) side1[i] = b[i] - a[i];
-    for (int i = 0; i < 3; i++) side2[i] = c[i] - b[i];
-    cosine += mathVecMagnitude(side1,3) * mathVecMagnitude(side1,3) + mathVecMagnitude(side2,3) * mathVecMagnitude(side2,3);
-    if (mathVecMagnitude(side1,3) * mathVecMagnitude(side2,3) / 10 == 0) {
-        DEBUG(("DIVISION BY ZERO WHILE FINDING ANGLE!"));
-    }
-    cosine /= 2 * mathVecMagnitude(side1,3) * mathVecMagnitude(side2,3);
-    
-    return acosf(cosine);
 }
 
 void mathVecProject(float c[], float a[], float b[], int n) {
@@ -146,31 +128,52 @@ void mathVecRotationXZ(float a[], float angle) {
 	a[2] = -sinf(angle)*xorg + cosf(angle)*a[2];
 }
 
-void mathVecRotateToOptimal(float a[]) {
+void mathVecRotateToBottom(float a[]) {
 	// Rotates the picture vector so that it's close to da shadow zone
-	a[2] = -sqrtf(a[0]*a[0] + a[2]*a[2]); // Rotate so that it's vertical and pointing down
+	a[2] = sqrtf(a[0]*a[0] + a[2]*a[2]); // Rotate so that it's vertical and pointing down
 	a[0] = 0;
-	mathVecRotationXZ(a,0.1); // So it's not exactly at the top
+	mathVecRotationXZ(a,-0.3); // So it's not exactly at the top
 }
 
-float minDistanceFromOrigin(float target[]) {
-	float temp[3] = {0,0,0}; //temp is the origin
-	
-	if (cosf(angle(temp,myState,target)) < 0) { //going away from origin
-		return mathVecMagnitude(myState, 3);
+void mathVecRotateToHorizontal(float a[]) {
+	// Rotates the vector to negative x
+	a[0] = -sqrtf(a[0]*a[0] + a[2]*a[2]);
+	a[2] = 0;
+	mathVecRotationXZ(a,-0.5);
+}
+
+void mathVecRotateToTop(float a[]){
+	// Rotates the vector a to the top
+	a[2] = -sqrtf(a[0]*a[0] + a[2]*a[2]); // Rotate so that it's vertical and pointing down
+	a[0] = 0;
+	mathVecRotationXZ(a,0.3); // So it's not exactly at the top
+}
+
+float minDistanceFromOrigin(float target[3]) {
+	float cos;
+	float temp[3];
+	float targetMag = mathVecMagnitude(target,3);
+	float meMag = mathVecMagnitude(myState,3);
+	mathVecSubtract(temp,target,myState,3);
+	float tempMag = mathVecMagnitude(temp,3);
+	cos = (targetMag*targetMag - meMag*meMag - tempMag*tempMag) / (-2 * meMag * tempMag);
+	if (cos < 0) {
+		DEBUG(("\nENDPOINT RETURNED\n"));
+		return meMag; // Shortest at endpoint
 	}
-	
-	else if (cosf(angle(temp,target,myState)) < 0) { //going in direction of origin
-		return mathVecMagnitude(target,3);
+	cos = (meMag*meMag - targetMag*targetMag - tempMag*tempMag) / (-2 * targetMag * tempMag);
+	if (cos < 0) {
+		DEBUG(("\nENDPOINT RETURNED\n"));
+		return targetMag; // Shortest at endpoint
 	}
-	
 	else {
-	    mathVecSubtract(temp,target,myState,3);
-	    mathVecProject(temp,myState,temp,3);
+		DEBUG(("\nANGLE IS: %f\n", acosf(cos)));
+		mathVecProject(temp,myState,temp,3);
 		mathVecSubtract(temp,myState,temp,3);
 		
 		return mathVecMagnitude(temp,3);
 	}
+
 }
 
 void setPositionTarget(float target[3], float multiplier) {
@@ -178,15 +181,15 @@ void setPositionTarget(float target[3], float multiplier) {
 	
 	float myPos[3],meMag;
 	
-	for(int i = 0; i < 3; i++) {
-		myPos[i] = myState[i];
-	}
+	memcpy(myPos, myState, 3*sizeof(float));
 	
 	meMag = mathVecMagnitude(myPos,3);
+
+	DEBUG(("\nminDistFromOrigin: %f\n",minDistanceFromOrigin(target)));
 	
-	if (minDistanceFromOrigin(target) > 0.34) {
+	if (minDistanceFromOrigin(target) > 0.32) {
 		//if (distance(myState, target) < 0.6) { // Save braking distance
-			api.setPositionTarget(target);
+		api.setPositionTarget(target);
 		//}
 
 		//else { // Or haul ass towards target
@@ -204,9 +207,9 @@ void setPositionTarget(float target[3], float multiplier) {
 		DEBUG(("GOING STRAIGHT\n"));
 	}
 	
-	else if (meMag >= 0.22 && meMag <= 0.34) {
+	else if (meMag >= 0.22 && meMag <= 0.315) {
 		for (int i = 0; i < 3; i++) {
-			myPos[i] = myPos[i] * 1.6;
+			myPos[i] = myPos[i] * 2;
 		}
 		
 		api.setPositionTarget(myPos);
@@ -224,7 +227,7 @@ void setPositionTarget(float target[3], float multiplier) {
 		}
 		
 		for (int i = 0; i < 3; i++) {
-			mePrep[i] = (mePrep[i] * 0.325 * meMag) / (sqrtf(meMag*meMag - 0.34*0.34));
+			mePrep[i] = (mePrep[i] * 0.325 * meMag) / (sqrtf(meMag*meMag - 0.315*0.315));
 		}
 		
 		mathVecSubtract(path,mePrep,myPos,3);
@@ -239,4 +242,37 @@ void setPositionTarget(float target[3], float multiplier) {
 		
 		DEBUG(("TAKING THE TANGENT\n"));
 	}
+}
+
+bool destroySouls(){
+    //gameplan: project the y and z cors, then project the xcor. 
+    ZRState other;
+    api.getOtherZRState(other);
+    float target[3];
+    if((other[0] > 0)&&(inShadow(other,target,2))){ //loose check that should be improved later. 
+        setPositionTarget(target,1.2);
+        return true;
+    }
+    return false;
+}
+
+bool inShadow(ZRState other, float target[3], int t){
+    if((other[1]+other[4]*t)*(other[1]+other[4]*t) + (other[2]+other[5]*t)*(other[2]+other[5]*t) <0.04){ //projected coor is in the shadow
+        DEBUG(("\nIfIsTrue\n"));
+        target[0] = 0;
+        target[1] = other[1] + other[4]*t;
+        target[2] = other[2] + other[5]*t;
+        for(int i = 0; i < 3; i++) {
+    		target[i] *= 0.195/mathVecMagnitude(target,3);
+    	}
+    	target[0] = other[0] + other[3];
+    	if(target[0] < 0.29){
+    	    target[0] = 0.29;
+    	}
+    	else if(target[0] > 0.48){
+    	    target[0] = 0.48;
+    	}
+        return true;
+    }
+    return false;
 }
