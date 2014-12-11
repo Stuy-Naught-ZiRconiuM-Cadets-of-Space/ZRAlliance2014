@@ -60,7 +60,7 @@ void loop() {
 	else if (nextFlare <= 30) {
 		lastState = Chose_POI;
 
-		state = GO_TO_SHADOW;
+		state = intermediaryRun;
 		DEBUG(("\nnextFlare: %d\nOH NO IT'S A FLARE!!!!!\n",nextFlare));
 	}
 
@@ -90,23 +90,26 @@ void loop() {
 			for (i = 0 ; i < 3 ; i++) {
 				brakingPt[i] = 0.5 * brakingPt[i] / mathVecMagnitude(brakingPt,3);
 			}
-
-			if (POILoc[2] > 0) {
-				mathVecRotateToBottom(POILoc);
-				mathVecRotationXZ(POILoc,-0.3);
-				mathVecRotateToBottom(brakingPt);
-				//mathVecRotationXZ(brakingPt,0.5);
-			}
-
-			else {
-				mathVecRotateToTop(POILoc);
-				mathVecRotationXZ(POILoc,0.3);
-				mathVecRotateToTop(brakingPt);
-				//mathVecRotationXZ(brakingPt,-0.5);
-			}
+			
+			if((fabsf(brakingPt[0])>0.14)&&(brakingPt[1] > 0.15)){
+		                if(brakingPt[2] > 0){
+					mathVecRotateToTop(brakingPt);
+		                }
+                		else{
+                			mathVecRotateToBottom(brakingPt);
+                		}
+            		}
+			else{
+                		if(brakingPt[2] < 0){
+					mathVecRotateToTop(brakingPt);
+		                }
+                		else{
+					mathVecRotateToBottom(brakingPt);
+	        	        }    
+            		}
 
 			setPositionTarget(brakingPt,1);
-			mathVecSubtract(facing,POILoc,brakingPt,3);
+			mathVecSubtract(facing,origin,brakingPt,3);
 			api.setAttitudeTarget(facing);
 
 			state = TakePic_One;
@@ -122,7 +125,9 @@ void loop() {
 			}
 
 			setPositionTarget(brakingPt,1);
+			mathVecSubtract(facing,origin,brakingPt,3);
 			api.setAttitudeTarget(facing);
+
 			if (game.alignLine(bestPOI)) {
 				game.takePic(bestPOI);
 				DEBUG(("\nI AM THE CHAMPION MY FRIENDS!\n"));
