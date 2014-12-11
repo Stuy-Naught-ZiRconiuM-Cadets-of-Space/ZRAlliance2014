@@ -287,7 +287,7 @@ bool destroySouls(){
     return false;
 }
 
-getPOILoc(float pos[3], int id, float t) { 
+void getPOILoc(float pos[3], int id, float t) { 
     float POILoc[3];
     game.getPOILoc(POILoc, id);
     
