@@ -1,4 +1,3 @@
-//yeech you forgot to normalize the facing vector 
 #define Chose_POI 0
 #define TakePic_One 1
 #define intermediaryRun 2
@@ -94,18 +93,20 @@ void loop() {
 
 			if (POILoc[2] > 0) {
 				mathVecRotateToBottom(POILoc);
+				mathVecRotationXZ(POILoc,-0.3);
 				mathVecRotateToBottom(brakingPt);
 				//mathVecRotationXZ(brakingPt,0.5);
 			}
 
 			else {
 				mathVecRotateToTop(POILoc);
+				mathVecRotationXZ(POILoc,0.3);
 				mathVecRotateToTop(brakingPt);
 				//mathVecRotationXZ(brakingPt,-0.5);
 			}
 
 			setPositionTarget(brakingPt,1);
-			mathVecSubtract(facing,origin,brakingPt,3);
+			mathVecSubtract(facing,POILoc,brakingPt,3);
 			api.setAttitudeTarget(facing);
 
 			state = TakePic_One;
@@ -190,7 +191,7 @@ void mathVecRotateToHorizontal(float a[]) {
 	// Rotates the vector to negative x
 	a[0] = -sqrtf(a[0]*a[0] + a[2]*a[2]);
 	a[2] = 0;
-	mathVecRotationXZ(a,-0.5);
+	//mathVecRotationXZ(a,-0.5);
 }
 
 void mathVecRotateToTop(float a[]){
