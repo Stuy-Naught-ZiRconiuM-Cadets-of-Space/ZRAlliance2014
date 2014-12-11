@@ -149,7 +149,7 @@ void loop() {
 			game.uploadPic();
 			if (memoryFilled == 0) {
 				DEBUG(("WE'LL JUST STAY HERE"));
-				state = lastState;
+				//state = lastState;
 			}
 			break;
 			}
