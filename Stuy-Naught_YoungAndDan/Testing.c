@@ -43,6 +43,38 @@ void mathVecRotateToTop(float a[]){
 	mathVecRotationXZ(a,0.3); // So it's not exactly at the top
 }
 
+float minDistanceFromOrigin(float target[]) {
+	float temp[3] = {0,0,0}; //temp is the origin
+	
+	if (angle(temp,myState,target) > PI/2) { //going away from origin
+		return mathVecMagnitude(myState, 3);
+	}
+	
+	else if (angle(temp,target,myState) > PI/2) { //going in direction of origin
+		return mathVecMagnitude(target,3);
+	}
+	for(int i = 0; i < 3; i ++) temp[i] = 0.0f;
+	else { // accurate to the nearest 0.05;
+	    float a[3];
+	    if(distance(temp,myState)>distance(temp,target)){
+	    	mathVecSubtract(a,myState,target,3);
+	    	for(int i = 0; i < 3; i ++) a[i] = 0.05/mathVecMagnitude(a,3);
+	    	while(angle(temp,target,myState) < PI/2){
+	    		for(int i = 0; i < 3; i ++) target[i] += a[i];
+	    	}
+	    	return mathVecMagnitude(target,3);
+	    }
+	    else{
+	    	mathVecSubtract(a,target,myState,3);
+	    	for(int i = 0; i < 3; i ++) a[i] = 0.05/mathVecMagnitude(a,3);
+	    	while(angle(temp,myState,target) < PI/2){
+	    		for(int i = 0; i < 3; i ++) myState[i] += a[i];
+	    	}
+	    	return mathVecMagnitude(myState,3);
+	    }
+	}
+}
+
 float minDistanceFromOrigin(float target[3]) {
 	float cos;
 	float temp[3];
