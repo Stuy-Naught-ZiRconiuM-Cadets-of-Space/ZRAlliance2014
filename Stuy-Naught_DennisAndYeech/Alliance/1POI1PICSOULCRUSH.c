@@ -1,3 +1,4 @@
+//yeech you forgot to normalize the facing vector 
 #define Chose_POI 0
 #define TakePic_One 1
 #define intermediaryRun 2
