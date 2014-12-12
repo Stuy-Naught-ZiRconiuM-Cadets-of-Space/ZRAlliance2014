@@ -46,6 +46,8 @@ void loop() {
 
 	api.getMyZRState(myState);
 	DEBUG(("\n%d\n",state));
+	DEBUG(("\n%f\n",distance(myState,brakingPt)));
+    DEBUG(("TARGET = %f,%f,%f\n",brakingPt[0],brakingPt[1],brakingPt[2]));
 
 	for (i = 0; i < 3; i++) {game.getPOILoc(POI[i], i);}
 	time++;
@@ -56,7 +58,7 @@ void loop() {
     if (nextFlare == -1) {
 		DEBUG(("\nI don't know when the next flare is, so stop asking.\n"));
 	}
-	else if ((nextFlare <= 30)&&(time>35)&&(time<20)) {
+	else if ((nextFlare <= 30)&&(time<25)&&(time>30)) {
 		lastState = Chose_POI;
 
 		state = GO_TO_SHADOW;
@@ -88,8 +90,14 @@ void loop() {
             if(fabsf(brakingPt[0])>0.15){
                 getPOILoc(brakingPt,bestPOI,24);
                 takePic = 24;
+                for (i = 0 ; i < 3 ; i++) {
+				    brakingPt[i] = 0.5 * brakingPt[i] / mathVecMagnitude(brakingPt,3);
+			    }
             }
             else{
+                for (i = 0 ; i < 3 ; i++) {
+				    brakingPt[i] = 0.54 * brakingPt[i] / mathVecMagnitude(brakingPt,3);
+			    }
                 if(brakingPt[2] < 0){
     			    mathVecRotateToTop(brakingPt);
                 }
@@ -97,10 +105,6 @@ void loop() {
                     mathVecRotateToBottom(brakingPt);
                 }    
             }
-            
-            for (i = 0 ; i < 3 ; i++) {
-				brakingPt[i] = 0.5 * brakingPt[i] / mathVecMagnitude(brakingPt,3);
-			}
             
 			setPositionTarget(brakingPt,1);
 			mathVecSubtract(facing,origin,myState,3);
@@ -170,14 +174,11 @@ void mathVecRotationXZ(float a[], float angle) {
 	a[2] = -sinf(angle)*xorg + cosf(angle)*a[2];
 }
 
-int mathVecRotateToBottom(float a[]) {
-	// Rotates the vector a to the top
-	int temp = 0;
-	while((a[0] !=  0)&&(a[2]>0)){
-	    getPOILoc(a,bestPOI,temp);
-	    temp++;
-	}
-	return temp;
+void mathVecRotateToBottom(float a[]) {
+	// Rotates the picture vector so that it's close to da shadow zone
+	a[2] = sqrtf(a[0]*a[0] + a[2]*a[2]); // Rotate so that it's vertical and pointing down
+	a[0] = 0;
+	mathVecRotationXZ(a,-0.3); // So it's not exactly at the top
 }
 
 void mathVecRotateToHorizontal(float a[]) {
@@ -187,14 +188,11 @@ void mathVecRotateToHorizontal(float a[]) {
 	mathVecRotationXZ(a,-0.5);
 }
 
-int mathVecRotateToTop(float a[]){
+void mathVecRotateToTop(float a[]){
 	// Rotates the vector a to the top
-	int temp = 0;
-	while((a[0] !=  0)&&(a[2]<0)){
-	    getPOILoc(a,bestPOI,temp);
-	    temp++;
-	}
-	return temp;
+	a[2] = -sqrtf(a[0]*a[0] + a[2]*a[2]); // Rotate so that it's vertical and pointing down
+	a[0] = 0;
+	mathVecRotationXZ(a,0.3); // So it's not exactly at the top
 }
 
 float minDistanceFromOrigin(float target[3]) {
