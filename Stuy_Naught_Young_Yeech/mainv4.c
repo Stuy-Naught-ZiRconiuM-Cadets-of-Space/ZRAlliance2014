@@ -1,8 +1,6 @@
 //codesize!
 //I think we HAVE to try and take 2 pictures
-// NO YOU IDIOT!!! WE NEED TO MOVE INTO THE SHADOWZONE BEFORE THE OTHER GUY, OR ELSE WE LOSE ALL FUELS!!!
-// THIS STRATEGY IS BUILT ON THE BASIS OF DEFENDING THE SHADOW ZONE
-// WE NEED TO GO TO SHADOW BEFORE LIKE 30 SECONDS!!!
+//This version beat Cornel's competitor
 //still colliding with asteroid.. I'M USING HAULASS YICHENG TRY AND FIX IT BUT WE NEED THE SPEED
 #define Chose_POI 0
 #define TakePic_One 1
