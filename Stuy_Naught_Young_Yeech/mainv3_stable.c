@@ -1,6 +1,5 @@
 // Problems
-// Sometimes fails to take pic 2!!
-// Doesn't take picture when it comes out of the shadow zone
+// If we push the other sphere INTO the asteroid, they'll remain in shadow forever.... and we're f**ked
 
 #define Chose_POI 0
 #define TakePic_One 1
@@ -59,11 +58,12 @@ void loop() {
 		DEBUG(("\nI don't know when the next flare is, so stop asking.\n"));
 	}
 	else if (nextFlare <= 30) {
-	    if(nextFlare == 0){
-	        flareNum++;
-	    }
 		state = GO_TO_SHADOW;
 		DEBUG(("\nnextFlare: %d\nOH NO IT'S A FLARE!!!!!\n",nextFlare));
+	}
+
+	if(nextFlare == 0){
+		flareNum++;
 	}
 
 	if (flareNum == 3) {
@@ -108,7 +108,7 @@ void loop() {
             temp[0] = mathVecMagnitude(brakingPt,3);
 
             for (i = 0 ; i < 3 ; i++) {
-			    brakingPt[i] = 0.43 * brakingPt[i] / temp[0];
+			    brakingPt[i] = 0.45 * brakingPt[i] / temp[0];
 		    }
             
 			setPositionTarget(brakingPt,1);
@@ -166,10 +166,11 @@ void loop() {
 			if(!destroySouls()) {
 				setPositionTarget(uploadPos,1);
 			}
-			game.takePic(bestPOI); // spam is life
 			mathVecSubtract(facing,earth,myState,3);
 			api.setAttitudeTarget(facing);
 			game.uploadPic();
+			game.takePic(bestPOI);
+			game.takePic(bestPOI);
 			/*if (memoryFilled == 0) {
 				DEBUG(("WE'LL JUST STAY HERE"));
 				state = lastState;
@@ -188,9 +189,6 @@ float distance(float p1[], float p2[]){
 
 void mathVecProject(float c[], float a[], float b[], int n) {
     // finds the projection of a onto b, puts the result in c
-    if (mathVecMagnitude(b,3) * mathVecMagnitude(b,3) / 10 == 0) {
-        DEBUG(("DIVISION BY ZERO WHILE PROJECTING!"));
-    }
     for (int i = 0; i < n; i++) {
         c[i] = (mathVecInner(a,b,3) * b[i]) / (mathVecMagnitude(b,3) * mathVecMagnitude(b,3));
     }
@@ -226,18 +224,24 @@ void mathVecRotateToTop(float a[]){
 
 float minDistanceFromOrigin(float target[3]) {
 	float cos;
+
 	float targetMag = mathVecMagnitude(target,3);
 	float meMag = mathVecMagnitude(myState,3);
+
 	mathVecSubtract(temp,target,myState,3);
+
 	float tempMag = mathVecMagnitude(temp,3);
 	cos = (targetMag*targetMag - meMag*meMag - tempMag*tempMag) / (-2 * meMag * tempMag);
+
 	if (cos < 0) {
 		return meMag; // Shortest at endpoint
 	}
+
 	cos = (meMag*meMag - targetMag*targetMag - tempMag*tempMag) / (-2 * targetMag * tempMag);
 	if (cos < 0) {
 		return targetMag; // Shortest at endpoint
 	}
+
 	else {
 		mathVecProject(temp,myState,temp,3);
 		mathVecSubtract(temp,myState,temp,3);
@@ -256,7 +260,7 @@ void setPositionTarget(float target[3], float multiplier) {
 	
 	meMag = mathVecMagnitude(myPos,3);
 	
-	if (minDistanceFromOrigin(target) > 0.32) {
+	if (minDistanceFromOrigin(target) > 0.33) {
 		//if (distance(myState, target) < 0.6) { // Save braking distance
 		api.setPositionTarget(target);
 		//}
@@ -276,7 +280,7 @@ void setPositionTarget(float target[3], float multiplier) {
 		DEBUG(("GOING STRAIGHT\n"));
 	}
 	
-	else if (meMag >= 0.22 && meMag <= 0.32) {
+	else if (meMag >= 0.22 && meMag <= 0.33) {
 		for (int i = 0; i < 3; i++) {
 			myPos[i] = myPos[i] * 2;
 		}
@@ -296,7 +300,7 @@ void setPositionTarget(float target[3], float multiplier) {
 		}
 		
 		for (int i = 0; i < 3; i++) {
-			mePrep[i] = (mePrep[i] * 0.32 * meMag) / (sqrtf(meMag*meMag - 0.32*0.32));
+			mePrep[i] = (mePrep[i] * 0.33 * meMag) / (sqrtf(meMag*meMag - 0.33*0.33));
 		}
 		
 		mathVecSubtract(path,mePrep,myPos,3);
