@@ -70,7 +70,7 @@ void loop() {
 		lastState = Chose_POI;
 	}
 	
-	if (time >= 28) {
+	if (time >= 30) {
 		state = GO_TO_SHADOW;
 	}
 
@@ -137,7 +137,7 @@ void loop() {
 			    }
 			}
 
-			setPositionTarget(brakingPt,1.2);
+			setPositionTarget(brakingPt,2);
 			api.setAttitudeTarget(facing);
 			if (game.alignLine(bestPOI)) {
 				game.takePic(bestPOI);
