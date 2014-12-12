@@ -1,3 +1,5 @@
+//codesize!
+//I think we HAVE to try and take 2 pictures
 #define Chose_POI 0
 #define TakePic_One 1
 #define TakePic_Two 2
