@@ -1,13 +1,12 @@
-//codesize!
-//I think we HAVE to try and take 2 pictures
-// NO YOU IDIOT!!! WE NEED TO MOVE INTO THE SHADOWZONE BEFORE THE OTHER GUY, OR ELSE WE LOSE ALL FUELS!!!
-// THIS STRATEGY IS BUILT ON THE BASIS OF DEFENDING THE SHADOW ZONE
-// WE NEED TO GO TO SHADOW BEFORE LIKE 30 SECONDS!!!
-//still colliding with asteroid.. I'M USING HAULASS YICHENG TRY AND FIX IT BUT WE NEED THE SPEED
+// Problems
+// Sometimes fails to take pic 2!!
+// Doesn't take picture when it comes out of the shadow zone
+
 #define Chose_POI 0
 #define TakePic_One 1
 #define TakePic_Two 2
-#define GO_TO_SHADOW 3
+//#define intermediaryRun 3
+#define GO_TO_SHADOW 4
 
 float myState[12];
 float POI[3][3];
@@ -18,12 +17,14 @@ int state;
 int bestPOI;
 int memoryFilled;
 int nextFlare;
+int lastState;
 int flareNum;
 float brakingPt[3];
 float POILoc[3];
 float facing[3];
 float earth[3];
 float uploadPos[3];
+float temp[3];
 float percentFuelRemaining;
 
 void init() {
@@ -36,6 +37,7 @@ void init() {
 	earth[1] = earth[2] = 0.f;
 	uploadPos[0] = 0.47f;
 	uploadPos[1] = uploadPos[2] = 0.f;
+	lastState = GO_TO_SHADOW;
 	memcpy(initialPosition,myState,3*sizeof(float));
 }
 
@@ -56,20 +58,24 @@ void loop() {
     if (nextFlare == -1) {
 		DEBUG(("\nI don't know when the next flare is, so stop asking.\n"));
 	}
-	else if (nextFlare <= 25) {
+	else if (nextFlare <= 30) {
 	    if(nextFlare == 0){
 	        flareNum++;
 	    }
-
 		state = GO_TO_SHADOW;
 		DEBUG(("\nnextFlare: %d\nOH NO IT'S A FLARE!!!!!\n",nextFlare));
 	}
 
-	if (time >= 230 || percentFuelRemaining <= 7) {
+	if (flareNum == 3) {
+		lastState = Chose_POI;
+	}
+	
+	if (time >= 30) {
 		state = GO_TO_SHADOW;
 	}
-	if((time%60 == 0)&&((state == 1)||(state == 2))){
-	    state = Chose_POI;
+
+	if (time >= 230 || percentFuelRemaining <= 7) {
+		state = GO_TO_SHADOW;
 	}
 	
 	switch (state) {
@@ -87,7 +93,6 @@ void loop() {
 
 			memcpy(brakingPt, POI[bestPOI], 3*sizeof(float));
 
-            
             if(fabsf(brakingPt[0])>0.15){
                 if(getPOILoc(brakingPt,bestPOI,25)==getPOILoc(brakingPt,bestPOI,22)){
                     
@@ -99,9 +104,11 @@ void loop() {
             else{
                 getPOILoc(brakingPt, bestPOI, 26);
             }
-            float a = mathVecMagnitude(brakingPt,3);
+
+            temp[0] = mathVecMagnitude(brakingPt,3);
+
             for (i = 0 ; i < 3 ; i++) {
-			    brakingPt[i] = 0.43 * brakingPt[i] / a;
+			    brakingPt[i] = 0.43 * brakingPt[i] / temp[0];
 		    }
             
 			setPositionTarget(brakingPt,1);
@@ -131,8 +138,7 @@ void loop() {
     			    }
 			}
 
-			setPositionTarget(brakingPt,1.2);
-			mathVecSubtract(facing,origin,myState,3);
+			setPositionTarget(brakingPt,2);
 			api.setAttitudeTarget(facing);
 			if (game.alignLine(bestPOI)) {
 				game.takePic(bestPOI);
@@ -156,13 +162,13 @@ void loop() {
 		    break;   
 		    }
 		    
-
 		case GO_TO_SHADOW:
 			//DEBUG(("IMPLEMENT LATER"));
 			{
 			if(!destroySouls()) {
 				setPositionTarget(uploadPos,1);
 			}
+			game.takePic(bestPOI); // spam is life
 			mathVecSubtract(facing,earth,myState,3);
 			api.setAttitudeTarget(facing);
 			game.uploadPic();
@@ -170,9 +176,7 @@ void loop() {
 				DEBUG(("WE'LL JUST STAY HERE"));
 				state = lastState;
 			}*/
-			if(flareNum == 3){
-			    state = Chose_POI;
-			}
+			state = lastState; // Always GO_TO_SHADOW unless flareNum > 3
 			break;
 			}
 	}
@@ -180,9 +184,8 @@ void loop() {
 
 float distance(float p1[], float p2[]){
 	// Thanks Cornel
-	float diff[3];
-	mathVecSubtract(diff,p1,p2,3);
-	return mathVecMagnitude(diff,3);
+	mathVecSubtract(temp,p1,p2,3);
+	return mathVecMagnitude(temp,3);
 }
 
 void mathVecProject(float c[], float a[], float b[], int n) {
@@ -225,7 +228,6 @@ void mathVecRotateToTop(float a[]){
 
 float minDistanceFromOrigin(float target[3]) {
 	float cos;
-	float temp[3];
 	float targetMag = mathVecMagnitude(target,3);
 	float meMag = mathVecMagnitude(myState,3);
 	mathVecSubtract(temp,target,myState,3);
@@ -352,7 +354,7 @@ bool getPOILoc(float pos[3], int id, float t) {
     }
     return false;
     
-} 
+}
 
 bool inShadow(ZRState other, float target[3], int t){
     if((other[1]+other[4]*t)*(other[1]+other[4]*t) + (other[2]+other[5]*t)*(other[2]+other[5]*t) <0.04){ //projected coor is in the shadow
@@ -374,6 +376,7 @@ bool inShadow(ZRState other, float target[3], int t){
     }
     return false;
 }
+
 void haulAssTowardTarget(float target[], float scalar) {
 // makes you go in the direction of target, but scalar times faster
 float scaledTarget[3];
