@@ -1,5 +1,6 @@
 //codesize!
 //I think we HAVE to try and take 2 pictures
+//still colliding with asteroid.. I'M USING HAULASS YICHENG TRY AND FIX IT BUT WE NEED THE SPEED
 #define Chose_POI 0
 #define TakePic_One 1
 #define TakePic_Two 2
