@@ -1,12 +1,11 @@
 // Problems
 // Sometimes fails to take pic 2!!
 // Doesn't take picture when it comes out of the shadow zone
-// Stupid server crashed again, more bugs may appear, stuff here are theoretical
 
 #define Chose_POI 0
 #define TakePic_One 1
 #define TakePic_Two 2
-#define intermediaryRun 3
+//#define intermediaryRun 3
 #define GO_TO_SHADOW 4
 
 float myState[12];
@@ -59,16 +58,20 @@ void loop() {
     if (nextFlare == -1) {
 		DEBUG(("\nI don't know when the next flare is, so stop asking.\n"));
 	}
-	else if ((nextFlare <= 30) && ((time<25) || (time>30))) {
+	else if (nextFlare <= 30) {
 	    if(nextFlare == 0){
 	        flareNum++;
 	    }
-		state = intermediaryRun;
+		state = GO_TO_SHADOW;
 		DEBUG(("\nnextFlare: %d\nOH NO IT'S A FLARE!!!!!\n",nextFlare));
 	}
 
 	if (flareNum == 3) {
 		lastState = Chose_POI;
+	}
+	
+	if (time >= 28) {
+		state = GO_TO_SHADOW;
 	}
 
 	if (time >= 230 || percentFuelRemaining <= 7) {
@@ -102,10 +105,10 @@ void loop() {
                 getPOILoc(brakingPt, bestPOI, 29);
             }
 
-            float a = mathVecMagnitude(brakingPt,3);
+            temp[0] = mathVecMagnitude(brakingPt,3);
 
             for (i = 0 ; i < 3 ; i++) {
-			    brakingPt[i] = 0.43 * brakingPt[i] / a;
+			    brakingPt[i] = 0.43 * brakingPt[i] / temp[0];
 		    }
             
 			setPositionTarget(brakingPt,1);
@@ -121,16 +124,16 @@ void loop() {
 			{
 			if(memoryFilled == 1) {
 			    if(!getPOILoc(brakingPt,bestPOI,time+3)){
-        		    float a = mathVecMagnitude(brakingPt,3);
+        		    temp[0] = mathVecMagnitude(brakingPt,3);
                     for (i = 0 ; i < 3 ; i++) {
-        			    brakingPt[i] = 0.38 * brakingPt[i] / a;
+        			    brakingPt[i] = 0.41 * brakingPt[i] / temp[0];
         		    }
         		    mathVecSubtract(facing,origin,brakingPt,3);
     			    api.setAttitudeTarget(facing);
     				state = TakePic_Two;
 			    }
 			    else{
-			        state = intermediaryRun;
+			        state = GO_TO_SHADOW;
 			    }
 			}
 
@@ -146,7 +149,7 @@ void loop() {
 		case TakePic_Two:
 		    {
 		    if(memoryFilled == 2) {
-		        state = intermediaryRun;
+		        state = GO_TO_SHADOW;
 		    }
 		    setPositionTarget(brakingPt,3);
 		    api.setAttitudeTarget(facing);
@@ -156,13 +159,6 @@ void loop() {
 			}
 		    break;   
 		    }
-
-		case intermediaryRun:
-			{
-			while (myState[0] > -0.32) {
-				setPositionTarget(uploadPos,2);
-			}
-			}
 		    
 		case GO_TO_SHADOW:
 			//DEBUG(("IMPLEMENT LATER"));
@@ -170,6 +166,7 @@ void loop() {
 			if(!destroySouls()) {
 				setPositionTarget(uploadPos,1);
 			}
+			game.takePic(bestPOI); // spam is life
 			mathVecSubtract(facing,earth,myState,3);
 			api.setAttitudeTarget(facing);
 			game.uploadPic();
@@ -279,7 +276,7 @@ void setPositionTarget(float target[3], float multiplier) {
 		DEBUG(("GOING STRAIGHT\n"));
 	}
 	
-	else if (meMag >= 0.22 && meMag <= 0.315) {
+	else if (meMag >= 0.22 && meMag <= 0.32) {
 		for (int i = 0; i < 3; i++) {
 			myPos[i] = myPos[i] * 2;
 		}
@@ -299,7 +296,7 @@ void setPositionTarget(float target[3], float multiplier) {
 		}
 		
 		for (int i = 0; i < 3; i++) {
-			mePrep[i] = (mePrep[i] * 0.325 * meMag) / (sqrtf(meMag*meMag - 0.315*0.315));
+			mePrep[i] = (mePrep[i] * 0.32 * meMag) / (sqrtf(meMag*meMag - 0.32*0.32));
 		}
 		
 		mathVecSubtract(path,mePrep,myPos,3);
@@ -349,7 +346,7 @@ bool getPOILoc(float pos[3], int id, float t) {
     }
     return false;
     
-} 
+}
 
 bool inShadow(ZRState other, float target[3], int t){
     if((other[1]+other[4]*t)*(other[1]+other[4]*t) + (other[2]+other[5]*t)*(other[2]+other[5]*t) <0.04){ //projected coor is in the shadow
