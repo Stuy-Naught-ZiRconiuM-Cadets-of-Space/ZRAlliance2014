@@ -1,6 +1,8 @@
 //codesize!
 //I think we HAVE to try and take 2 pictures
-//This version beat Cornel's competitor
+// NO YOU IDIOT!!! WE NEED TO MOVE INTO THE SHADOWZONE BEFORE THE OTHER GUY, OR ELSE WE LOSE ALL FUELS!!!
+// THIS STRATEGY IS BUILT ON THE BASIS OF DEFENDING THE SHADOW ZONE
+// WE NEED TO GO TO SHADOW BEFORE LIKE 30 SECONDS!!!
 //still colliding with asteroid.. I'M USING HAULASS YICHENG TRY AND FIX IT BUT WE NEED THE SPEED
 #define Chose_POI 0
 #define TakePic_One 1
@@ -54,7 +56,7 @@ void loop() {
     if (nextFlare == -1) {
 		DEBUG(("\nI don't know when the next flare is, so stop asking.\n"));
 	}
-	else if ((nextFlare <= 25)&&((time<25)||(time>30))) {
+	else if (nextFlare <= 25) {
 	    if(nextFlare == 0){
 	        flareNum++;
 	    }
