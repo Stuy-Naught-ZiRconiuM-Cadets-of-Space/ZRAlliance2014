@@ -27,8 +27,9 @@ void init() {
 	state = 0;
 	earth[0] = 0.64f;
 	earth[1] = earth[2] = 0.f;
-	uploadPos[0] = 0.5f;
-	uploadPos[1] = uploadPos[2] = 0.f;
+	uploadPos[0] = 0.22f;
+	uploadPos[1] = 0.f;
+	uploadPos[2] = -0.17f;
 	POILoc[0] = POILoc[1] = POILoc[2] = 0.f;
 	origin[0] = origin[1] = origin[3] = 0.f;
 	bestPOI = 0; // Stupid compiler
@@ -60,7 +61,7 @@ void loop() {
 	else if (nextFlare <= 30) {
 		lastState = Chose_POI;
 
-		state = intermediaryRun;
+		state = GO_TO_SHADOW;
 		DEBUG(("\nnextFlare: %d\nOH NO IT'S A FLARE!!!!!\n",nextFlare));
 	}
 
