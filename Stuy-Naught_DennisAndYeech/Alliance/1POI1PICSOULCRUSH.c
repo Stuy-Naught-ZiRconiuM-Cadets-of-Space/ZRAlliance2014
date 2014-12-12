@@ -1,6 +1,6 @@
 #define Chose_POI 0
 #define TakePic_One 1
-#define intermediaryRun 2
+//#define intermediaryRun 2
 #define GO_TO_SHADOW 3
 
 float myState[12];
@@ -122,7 +122,7 @@ void loop() {
 			{
 			if(memoryFilled != 0) {
 
-				state = intermediaryRun;
+				state = GO_TO_SHADOW;
 			}
 
 			setPositionTarget(brakingPt,1);
@@ -137,12 +137,12 @@ void loop() {
 			break;
 			}
 
-		case intermediaryRun:
-			{
-			while (myState[0] > -0.32) {
-				setPositionTarget(uploadPos,2);
-			}
-			}
+		//case intermediaryRun:
+		//	{
+		//	while (myState[0] > -0.32) {
+		//		setPositionTarget(uploadPos,2);
+		//	}
+		//	}
 
 		case GO_TO_SHADOW:
 			//DEBUG(("IMPLEMENT LATER"));
