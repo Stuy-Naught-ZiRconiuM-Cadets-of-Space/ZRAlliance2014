@@ -113,13 +113,18 @@ void loop() {
 			{
 			if(memoryFilled == 1) {
 			        getPOILoc(brakingPt,bestPOI,5);
-        		    float a = mathVecMagnitude(brakingPt,3);
+        		    float a = mathVecMagnitude(brakingPt,5);
                     for (i = 0 ; i < 3 ; i++) {
         			    brakingPt[i] = 0.38 * brakingPt[i] / a;
         		    }
         		    mathVecSubtract(facing,origin,myState,3);
     			    api.setAttitudeTarget(facing);
-    				state = TakePic_Two;
+    			    if(distance(myState,brakingPt)>0.2){
+    			        state = GO_TO_SHADOW;
+    			    }
+    			    else{
+    				    state = TakePic_Two;
+    			    }
 			}
 
 			setPositionTarget(brakingPt,1.2);
@@ -137,7 +142,7 @@ void loop() {
 		    if(memoryFilled == 2) {
 		        state = GO_TO_SHADOW;
 		    }
-		    haulAssTowardTarget(brakingPt,2.5);
+		    setPositionTarget(brakingPt,4);
 		    mathVecSubtract(facing,origin,myState,3);
 		    api.setAttitudeTarget(facing);
 		    if (game.alignLine(bestPOI)) {
