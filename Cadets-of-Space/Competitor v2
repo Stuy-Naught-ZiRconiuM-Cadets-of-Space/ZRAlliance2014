@@ -1,0 +1,240 @@
+//Begin page functions
+float distance(float *p1, float *p2)
+{
+    float diff[3];
+    mathVecSubtract(diff,p1,p2,3);
+    return mathVecMagnitude(diff,3);
+}
+
+float diffmag(float *point1, float *point2)
+{
+    float side[3];
+    mathVecSubtract(side, point1, point2, 3);
+    return mathVecMagnitude(side, 3);
+}
+
+float angle(float *a, float *b, float *c)
+{
+    float side_ac_mag, side_ba_mag, side_cb_mag;
+    float cosine;
+
+    side_ac_mag = diffmag(a, c);
+    side_ba_mag = diffmag(b, a);
+    side_cb_mag = diffmag(c, b);
+    
+    cosine=(-side_ac_mag*side_ac_mag + side_ba_mag*side_ba_mag + side_cb_mag*side_cb_mag) 
+        /(2.0*side_ba_mag*side_cb_mag);
+    
+    return acosf(cosine);
+}
+
+void mathVecProject(float *c, float *a, float *b, int n) 
+{
+    mathVecScalarMult(c, b, mathVecInner(a,b,3)/(mathVecMagnitude(b,3)*mathVecMagnitude(b,3)));
+}
+
+void mathVecRotationXZ(float *a, float angle) 
+{
+    float xorg = a[0];
+    a[0]=cosf(angle)*a[0]+sinf(angle)*a[2];
+    a[2]=-sinf(angle)*xorg+cosf(angle)*a[2];
+}
+
+void mathVecRotateToOptimal(float *a) 
+{
+    a[2]=-sqrtf(a[0]*a[0]+a[2]*a[2]); 
+    a[0]=0.0f;
+    mathVecRotationXZ(a,0.1);
+}
+
+float minDistanceFromOrigin(float *target) 
+{
+    float temp[3]={0.0f,0.0f,0.0f};
+
+    if (cosf(angle(temp,myState,target)) < 0) return mathVecMagnitude(myState,3);
+
+    else if (cosf(angle(temp,target,myState)) < 0) return mathVecMagnitude(target,3);
+
+    else{
+            mathVecSubtract(temp,target,myState,3);
+            mathVecProject(temp,myState,temp,3);
+            mathVecSubtract(temp,myState,temp,3);
+
+            return mathVecMagnitude(temp,3);
+        }
+}
+
+void mathVecScalarMult(float *result, float *source, float scalar)
+{
+    
+    for (int i=0; i<3; ++i) result[i]=source[i]*scalar;
+}
+
+void setPositionTarget(float *target, float multiplier) 
+{
+
+    float myPos[3],meMag;
+
+    memcpy(myPos, myState, 3*sizeof(float));
+
+    meMag=mathVecMagnitude(myPos,3);
+
+    if (minDistanceFromOrigin(target) > 0.34) api.setPositionTarget(target);
+    else if (meMag >= 0.22 && meMag <= 0.34) 
+            {  
+                mathVecScalarMult(myPos,myPos,1.4f);
+                api.setPositionTarget(myPos);
+            }
+
+    else{
+            float opposite[3];
+            float perpendicular[3];
+            float mePrep[3];
+            float path[3]; 
+            float temp[3];
+            float temp_product;
+        
+            mathVecProject(opposite,target,myPos,3);
+            mathVecSubtract(perpendicular,target,opposite,3);
+
+            temp_product = (0.325*meMag)/(mathVecMagnitude(perpendicular,3)*sqrtf(meMag*meMag - 0.34*0.34));
+            
+            mathVecScalarMult(mePrep,perpendicular,temp_product);
+
+            mathVecSubtract(path,mePrep,myPos,3);
+
+            mathVecScalarMult(path,path,multiplier);
+    
+            mathVecAdd(temp,myPos,path,3);
+
+            api.setPositionTarget(temp);
+        }
+}
+
+void AvoidSolarFlares()
+{
+    if(nextFlare==1) 
+    {
+        game.turnOff();
+        game.turnOn();
+    }
+}
+
+//End page functions
+//Begin page init
+#define Align_POI 0
+#define Take_Pic 1
+#define Upload_Shadow 2
+
+float myState[12];
+float POI[3][3];
+float POILoc[3];
+float brakingPt[3];
+float origin[3];
+float facing[3];
+float earth[3];
+float uploadPos[3];
+
+int time;
+int state;
+int lastState;
+int nextFlare;
+int memoryFilled;
+int id;
+
+void init() 
+{
+	time=0;
+	state=0;
+	memset(origin,0,3*sizeof(float));
+	earth[0]=0.64f;
+	earth[1]=earth[2]=0.0f;
+	uploadPos[0]=0.30f;
+	uploadPos[2]=-0.15f;
+	lastState=Align_POI;
+}
+//End page init
+//Begin page main
+void loop() 
+{
+	int i;
+	
+	api.getMyZRState(myState);
+
+	for (i=0; i<3; i++) game.getPOILoc(POI[i], i);
+	
+	memoryFilled=game.getMemoryFilled();
+	
+	nextFlare=game.getNextFlare();
+	
+	if (game.getFuelRemaining()==0) game.takePic(0);
+	
+	if (time%60==0&&state==Take_Pic) state=Align_POI;
+	
+    if(time==0) 
+    {
+        myState[1]>0 ? uploadPos[1]=0.15f : uploadPos[1]=-0.15f ;
+        myState[1]>0 ? id=0 : id=1 ;
+    }
+
+    if(!(myState[0]>0.0f&&myState[0]<0.64f&&myState[1]>-0.2f&&myState[1]<0.2f&&myState[2]>-0.2f&&myState[2]<0.2f))
+	    AvoidSolarFlares();
+    else api.setControlMode(CTRL_PD,CTRL_PID);
+
+    if (nextFlare<=18&&nextFlare!=-1) 
+	    { 
+	        if (lastState!=Upload_Shadow) lastState=state;
+                else lastState=Align_POI;
+		    state=Upload_Shadow;
+	    }
+
+	switch (state) {
+		case Align_POI:
+			{
+			    memcpy(POILoc, POI[id], 3*sizeof(float));
+
+			    memcpy(brakingPt, POILoc, 3*sizeof(float));
+			    
+			    float temp=0.46/mathVecMagnitude(brakingPt,3);
+                mathVecScalarMult(brakingPt,brakingPt,temp);
+
+			    mathVecRotateToOptimal(brakingPt);
+			    setPositionTarget(brakingPt,0.8);
+			    mathVecSubtract(facing,origin,myState,3);
+			    api.setAttitudeTarget(facing);
+
+			    state=Take_Pic;
+
+			break;
+			}
+        
+        case Take_Pic:
+			{
+			    if(memoryFilled!=0) state = Upload_Shadow;
+
+			    setPositionTarget(brakingPt,0.8);
+			    mathVecSubtract(facing,origin,myState,3);
+			    api.setAttitudeTarget(facing);
+			
+			    if (game.alignLine(id))  game.takePic(id);
+
+			break;
+			}
+
+		case Upload_Shadow:
+			{
+			    if(nextFlare<=18&&nextFlare!=-1) setPositionTarget(uploadPos,0.8);
+			   
+			    mathVecSubtract(facing,earth,myState,3);
+			    api.setAttitudeTarget(facing);
+			    
+			    if (memoryFilled==0) state = lastState;
+			        else game.uploadPic();
+			        
+			break;
+			}
+	}
+	
+	time++;
+}
+//End page main
